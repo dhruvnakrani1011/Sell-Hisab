@@ -98,8 +98,10 @@ th.srt{cursor:pointer;user-select:none}th.srt:hover{filter:brightness(1.3)}th.sr
 <div class="stat"><span class="si" style="--c:#4f46e5">&#8593;</span><small>Total Sales</small><b id="s2">-</b></div>
 <div class="stat"><span class="si" style="--c:#16a34a">&#8595;</span><small>Cash Received</small><b id="s3">-</b></div>
 <div class="stat"><span class="si" style="--c:#0ea5e9">&#8595;</span><small>Bank Received</small><b id="s5">-</b></div>
+<div class="stat"><span class="si" style="--c:#16a34a">&#8593;</span><small>Advance (Jama)</small><b id="s6">-</b></div>
 <div class="stat"><span class="si" style="--c:#f59e0b">&#9679;</span><small>Customers</small><b id="s4">-</b></div></div>
 <div class="card bar noprint"><div><label>Search customer</label><input id="sq" placeholder="Type customer name..." oninput="drawSummary()"></div>
+<div style="max-width:200px"><label>Show</label><select id="sf" onchange="drawSummary()"><option value="">All customers</option><option value="baki">Baki (receivable)</option><option value="adv">Advance (jama)</option></select></div>
 <label class="chk"><input type="checkbox" id="sp" onchange="drawSummary()"> Pending only</label></div>
 <div class="card wrap"><table><thead><tr><th>Customer</th><th class="n">Opening</th><th class="n">Sales</th><th class="n">Extra</th><th class="n">Cash</th><th class="n">Bank</th><th class="n">Final Pending</th></tr><tr class="s" id="stot"></tr></thead><tbody id="sb"></tbody></table></div></div>
 
@@ -243,13 +245,13 @@ function sortable(sel,map,st,redraw){ const ths=document.querySelectorAll(sel+' 
     th.onclick=()=>{ st.dir=st.k===k?-st.dir:(/name|party|remark|^n$/.test(k)?1:-1); st.k=k; mk(); redraw(); }; }); mk(); }
 function drawSummary(){
   const S=k=>parties.reduce((a,p)=>a+Number(p[k]||0),0);
-  $('#s1').textContent='\u20B9 '+fmt(S('final_pending')); $('#s2').textContent='\u20B9 '+fmt(S('main_purchase')+S('extra_charges'));
+  const pos=parties.reduce((a,p)=>a+Math.max(0,p.final_pending),0), ng=parties.filter(p=>p.final_pending<-0.005); $('#s1').textContent='\u20B9 '+fmt(pos); $('#s6').innerHTML='\u20B9 '+fmt(-ng.reduce((a,p)=>a+p.final_pending,0))+(ng.length?'<small style="display:block;font-size:12px;color:var(--mut)">'+ng.length+' customer'+(ng.length>1?'s':'')+'</small>':''); $('#s2').textContent='\u20B9 '+fmt(S('main_purchase')+S('extra_charges'));
   $('#s3').textContent='\u20B9 '+fmt(S('cash_payment')); $('#s5').textContent='\u20B9 '+fmt(S('bank_payment')); $('#s4').textContent=parties.length;
   const q=$('#sq').value.trim().toLowerCase(), onlyP=$('#sp').checked;
-  const L=parties.filter(p=>p.party_name.toLowerCase().includes(q)&&(!onlyP||Math.abs(p.final_pending)>0.005));
+  const L=parties.filter(p=>p.party_name.toLowerCase().includes(q)&&(!onlyP||Math.abs(p.final_pending)>0.005)&&($('#sf').value===''||($('#sf').value==='baki'&&p.final_pending>0.005)||($('#sf').value==='adv'&&p.final_pending<-0.005)));
   if(sS.k) L.sort((a,b)=>sS.dir*cmpv(a,b,sS.k));
   const T=k=>L.reduce((a,p)=>a+Number(p[k]||0),0);
-  const row=(n,o,m,e,c,b,f,tot)=>`<td>${tot?'TOTAL ('+L.length+')':`<span class="av">${esc(n).charAt(0).toUpperCase()}</span><a class="pn" onclick="openLedger(this.dataset.n)" data-n="${esc(n)}">${esc(n)}</a>`}</td><td class="n">${fmt(o)}</td><td class="n">${fmt(m)}</td><td class="n">${fmt(e)}</td><td class="n">${fmt(c)}</td><td class="n">${fmt(b)}</td><td class="n ${f<0?'neg':''}"><b>${fmt(f)}</b></td>`;
+  const row=(n,o,m,e,c,b,f,tot)=>`<td>${tot?'TOTAL ('+L.length+')':`<span class="av">${esc(n).charAt(0).toUpperCase()}</span><a class="pn" onclick="openLedger(this.dataset.n)" data-n="${esc(n)}">${esc(n)}</a>`}</td><td class="n">${fmt(o)}</td><td class="n">${fmt(m)}</td><td class="n">${fmt(e)}</td><td class="n">${fmt(c)}</td><td class="n">${fmt(b)}</td>${tot?`<td class="n"><b>Baki ${fmt(L.reduce((a,p)=>a+Math.max(0,p.final_pending),0))}${L.some(p=>p.final_pending<-0.005)?' \u00B7 Adv '+fmt(-L.reduce((a,p)=>a+Math.min(0,p.final_pending),0)):''}</b></td>`:f<-0.005?`<td class="n up"><b>Adv ${fmt(-f)}</b></td>`:`<td class="n"><b>${fmt(f)}</b></td>`}`;
   $('#stot').innerHTML=row('',T('opening_balance'),T('main_purchase'),T('extra_charges'),T('cash_payment'),T('bank_payment'),T('final_pending'),1);
   $('#sb').innerHTML=L.map(p=>'<tr>'+row(p.party_name,p.opening_balance,p.main_purchase,p.extra_charges,p.cash_payment,p.bank_payment,p.final_pending,0)+'</tr>').join('');
   $('#sum .wrap').style.setProperty('--h',($('#sum thead th').offsetHeight||38)+'px');
@@ -260,7 +262,7 @@ function loadLedger(){
   const name=pname($('#lp').value); if(!name){ $('#lb').innerHTML=''; return say($('#lp').value?'No such party':'',true); }
   const p=parties.find(x=>x.party_name===name), rows=ledgerRows(D,mult,name,p.opening_balance);
   $('#k0').textContent=name; $('#k1').textContent=fmt(p.opening_balance);
-  $('#k2').textContent=fmt(p.final_pending); $('#k2').className=p.final_pending<0?'neg':'';
+  $('#k2').textContent=p.final_pending<-0.005?'Advance '+fmt(-p.final_pending):fmt(p.final_pending); $('#k2').className=p.final_pending<-0.005?'up':'';
   const lm=[...rows].reverse().find(r=>r.m);
   if(lm){ $('#k3').textContent=fd(lm.date); $('#k4').textContent='Pending at that time: '+fmt(lm.pending)+' · '+(rows.length-1-rows.lastIndexOf(lm))+' entries since'; }
   else { $('#k3').textContent='-'; $('#k4').textContent='No entry marked yet'; }
@@ -324,7 +326,7 @@ function prev(){
   const cur=p?Number(p.final_pending):null;
   $('#pvT').textContent='\u20B9 '+fmt(amt);
   $('#pvF').textContent=k==='mail'?'Cartons \u00D7 Pcs \u00D7 Price \u00D7 '+mult:k==='pay'?'Payment: reduces pending':'Extra charge: increases pending';
-  $('#pcur').textContent=cur===null?'-':'\u20B9 '+fmt(cur); $('#pnew').textContent=cur===null?'-':'\u20B9 '+fmt(k==='pay'?cur-amt:cur+amt);
+  const fb=n=>n<-0.005?'Advance \u20B9 '+fmt(-n):'\u20B9 '+fmt(n); $('#pcur').textContent=cur===null?'-':fb(cur); $('#pnew').textContent=cur===null?'-':fb(k==='pay'?cur-amt:cur+amt);
   const pn=$('#f_prod').value.trim(); $('#pimg').innerHTML=k==='mail'&&IU(pn)?`<img src="${esc(IU(pn))}" alt="" style="width:100%;max-height:180px;object-fit:contain;border-radius:12px;margin-bottom:10px;background:var(--priL)" onerror="this.style.display='none'">`:''; $('#np').classList.toggle('hide',!(k==='mail'&&mm==='items'&&pn&&!prodSet.has(pn.toUpperCase())));
 }
 function newParty(){ $('#np_n').value=$('#f_party').value.trim(); $('#np_o').value=''; $('#npd').showModal(); }
