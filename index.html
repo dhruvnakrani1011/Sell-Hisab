@@ -66,7 +66,7 @@ dialog{border:1px solid var(--line);border-radius:16px;background:var(--card);co
 #login{min-height:100vh;display:grid;place-items:center;background:radial-gradient(900px 500px at 15% 0,#c7d2fe 0,transparent 60%),radial-gradient(800px 500px at 100% 100%,#ddd6fe 0,transparent 60%),var(--bg)}
 #login main{margin:0;padding:16px;width:min(400px,100%)}#login .logo{color:var(--ink);padding:0 0 14px}
 @media(max-width:900px){header{position:sticky;inset:auto;top:0;width:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding:10px 12px}.logo{padding:0}nav{flex-direction:row;overflow:auto;flex:1 1 100%;order:3}main{margin-left:0;padding:14px}}
-@media print{@page{size:A4 landscape;margin:8mm}
+@media print{th.srt:after{content:none!important}@page{size:A4 landscape;margin:8mm}
 :root{--bg:#fff;--card:#fff;--ink:#000;--mut:#444;--line:#cbd5e1;--mail:#f3f7ff;--pay:#effaf3;--ext:#fff8e6;--priL:#eef0ff;--pri:#3730a3;--ok:#15803d;--red:#be123c}
 header,.noprint,#msg,.stats,.act{display:none!important}body{background:#fff;color:#000}main{margin:0!important;padding:0!important}
 .card{box-shadow:none;border:0;padding:0 0 8px;margin-bottom:8px;break-inside:avoid}.wrap,.card.wrap{max-height:none!important;overflow:visible!important;min-height:0!important}
@@ -109,7 +109,7 @@ th.srt{cursor:pointer;user-select:none}th.srt:hover{filter:brightness(1.3)}th.sr
 
 <div id="led" class="tab hide">
 <div class="card bar noprint"><div><label>Customer</label><input id="lp" list="plist2" placeholder="Type or select customer" onchange="loadLedger()"></div>
-<button class="btn" onclick="waOpen()">WhatsApp</button><button class="btn" onclick="window.print()">Print / PDF</button></div>
+<button class="btn" onclick="waOpen()">Statement / WhatsApp</button><button class="btn" onclick="window.print()">Print</button></div>
 <div class="card kpi"><div><small>Party</small><b id="k0">-</b></div><div><small>Opening Balance</small><b id="k1">-</b></div>
 <div><small>Final Pending</small><b id="k2">-</b></div><div><small>Last Matched</small><b id="k3">-</b><i id="k4"></i></div></div>
 <div class="card wrap"><table><thead><tr><th>Date</th><th>Party Name</th><th>Product Name</th><th class="n">Cartons</th><th class="n">Pcs / Carton</th><th class="n">Original Price</th><th class="n">Original Total</th><th class="n">Cash Payment</th><th class="n">Bank Payment</th><th class="n">Pending</th><th class="noprint act"></th></tr></thead><tbody id="lb"></tbody></table></div></div>
@@ -130,12 +130,13 @@ th.srt{cursor:pointer;user-select:none}th.srt:hover{filter:brightness(1.3)}th.sr
 <div class="card sidep"><div id="pimg"></div><small>Entry Total</small><b id="pvT">&#8377; 0.00</b><i id="pvF"></i><hr><small>Current Pending</small><b id="pcur">-</b><small>After this entry</small><b id="pnew">-</b></div>
 </div></div>
 <dialog id="imd"><b style="font-size:16px">Product images</b><p style="color:var(--mut);font-size:12px">Paste one product per line: PRODUCT NAME, then the image link (copy from Excel or write NAME [space] https://...). Existing images are replaced.</p><textarea id="im_t" rows="9" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:12px monospace"></textarea><p style="text-align:right;margin-bottom:0"><button class="btn" onclick="$('#imd').close()">Cancel</button> <button class="pri" onclick="importImgs()">Save images</button></p></dialog>
-<dialog id="wad" style="width:min(560px,94vw)"><b style="font-size:16px">Send statement on WhatsApp</b>
+<dialog id="wad" style="width:min(560px,94vw)"><b style="font-size:16px">Customer statement</b>
+<div class="grid"><div><label>Business name (shown on PDF)</label><input id="wa_biz" oninput="waPrep()" placeholder="e.g. Cheaperzone"></div><div><label>Contact line (phone, website)</label><input id="wa_bl" oninput="waPrep()" placeholder="e.g. +91 98XXXXXXXX | cheaperzone.in"></div></div>
 <div class="grid"><div><label>Mobile number (optional, saved on this device)</label><input id="wa_ph" placeholder="e.g. 98XXXXXXXX"></div><div><label>Entries to include</label><select id="wa_n" onchange="waRefresh()"><option value="5">Last 5</option><option value="10" selected>Last 10</option><option value="20">Last 20</option><option value="0">All</option></select></div></div>
 <label class="chk" style="padding:10px 0 0"><input type="checkbox" id="wa_pdf" checked> Attach PDF statement <span id="wa_ps" style="margin-left:6px"></span></label>
 <small style="color:var(--mut)">On a phone the PDF is shared as a file. On a computer it is sent as a view-only link inside the message.</small>
 <label>Message (you can edit)</label><textarea id="wa_t" rows="11" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:13px/1.4 inherit"></textarea>
-<p style="text-align:right;margin-bottom:0"><button class="btn" onclick="$('#wad').close()">Cancel</button> <button class="pri" onclick="waSend()">Send on WhatsApp</button></p></dialog>
+<p style="text-align:right;margin-bottom:0"><button class="btn" onclick="$('#wad').close()">Cancel</button> <button class="btn" onclick="waDownload()">Download PDF</button> <button class="pri" onclick="waSend()">Send on WhatsApp</button></p></dialog>
 <dialog id="npd"><b style="font-size:16px">New customer</b><label>Customer name</label><input id="np_n"><label>Opening balance</label><input id="np_o" type="number" step="any" placeholder="0"><p style="text-align:right;margin-bottom:0"><button class="btn" onclick="$('#npd').close()">Cancel</button> <button class="pri" onclick="saveParty()">Add party</button></p></dialog>
 <dialog id="dlg"><b id="dt" style="font-size:16px">Edit entry</b><div id="df"></div><div id="dw" class="warn hide">This entry is marked Matched. Editing will clear the mark.</div><p style="text-align:right;margin-bottom:0"><button class="btn" onclick="$('#dlg').close()">Cancel</button> <button class="pri" onclick="saveEdit()">Save</button></p></dialog>
 <div id="blk" class="tab hide"><div class="card noprint">
@@ -221,7 +222,10 @@ const SHEET={MAIL:'Mail',PAYMENT:'Payments',EXTRA:'Extra'}, LIST={MAIL:'mail',PA
 const pname=v=>{const x=D.parties.find(p=>p.name.toLowerCase()===String(v).trim().toLowerCase());return x?x.name:null;};
 
 async function call(action,p={}){
-  const r=await fetch(API,{method:'POST',body:JSON.stringify({key:KEY,action,...p})});
+  const ac=new AbortController(), tm=setTimeout(()=>ac.abort(),90000); let r;
+  try{ r=await fetch(API,{method:'POST',body:JSON.stringify({key:KEY,action,...p}),signal:ac.signal}); }
+  catch(e){ throw new Error(e.name==='AbortError'?'The server is taking too long. Try again in a minute.':'Could not reach the server ('+e.message+'). Check the Web App URL, deployment access (Anyone) and your internet.'); }
+  finally{ clearTimeout(tm); }
   let j; try{ j=await r.json(); }catch(e){ throw new Error('Could not read the server response. Check the Web App URL.'); }
   if(!j.ok){ if(/Unknown action/.test(j.error)) throw new Error('The new Code.gs is not deployed. In Apps Script: Deploy > Manage deployments > Edit > Version: New version > Deploy.'); if(/lock/i.test(j.error)) throw new Error('Sheet is busy (sync running). Try again in 30 seconds.'); throw new Error(j.error); } return j.data;
 }
@@ -574,35 +578,54 @@ function waBuild(){
   return 'Dear '+name+',\nYour account statement as of '+today+':\n\n'+L.map(line).join('\n')+'\n\n*'+bal+'*'+(f>0.005?'\n\nPlease arrange the payment. Thank you.':'\n\nThank you.');
 }
 async function waPdf(d){
-  const {PDFDocument,StandardFonts,rgb}=PDFLib, doc=await PDFDocument.create(), F=await doc.embedFont(StandardFonts.Helvetica), B=await doc.embedFont(StandardFonts.HelveticaBold);
-  const W=595,H=842,M=36, san=t=>String(t==null?'':t).replace(/[^\x20-\x7E]/g,'?'), ink=rgb(.1,.12,.2), mut=rgb(.4,.45,.55);
-  let pg, y; const pages=[];
-  const txt=(t,x,o={})=>pg.drawText(san(t),{x,y:o.y||y,size:o.s||9,font:o.b?B:F,color:o.c||ink});
-  const rt=(t,xr,o={})=>{ t=san(t); const f=o.b?B:F, w=f.widthOfTextAtSize(t,o.s||9); pg.drawText(t,{x:xr-w,y:o.y||y,size:o.s||9,font:f,color:o.c||ink}); };
-  const cut=(t,w,s=9)=>{ t=san(t); while(t.length>1&&F.widthOfTextAtSize(t,s)>w) t=t.slice(0,-1); return t; };
-  const head=()=>{ pg.drawRectangle({x:M,y:y-5,width:W-2*M,height:18,color:rgb(.93,.94,1)});
-    txt('DATE',M+4,{b:1,s:8,y:y}); txt('DETAILS',M+66,{b:1,s:8}); rt('PRICE',335,{b:1,s:8}); rt('SALES',405,{b:1,s:8}); rt('RECEIVED',470,{b:1,s:8}); rt('BALANCE',W-M-4,{b:1,s:8}); y-=20; };
-  const newPage=()=>{ pg=doc.addPage([W,H]); pages.push(pg); y=H-M; };
-  newPage();
-  txt('Account Statement',M,{b:1,s:18}); y-=22; txt(d.name,M,{b:1,s:13}); y-=16; txt('As of '+fd(nowIso()),M,{s:9,c:mut}); y-=22;
-  const f=d.f, lab=f<-0.005?'Advance (in your favour)':'Pending balance';
-  pg.drawRectangle({x:M,y:y-34,width:W-2*M,height:44,color:f<-0.005?rgb(.9,.97,.92):rgb(1,.93,.94)});
-  txt(lab,M+12,{s:9,c:mut,y:y-4}); txt('Rs. '+fmt(Math.abs(f)),M+12,{b:1,s:16,y:y-24}); y-=56;
-  head(); if(d.L.length<d.rows.length||d.p.opening_balance){ txt('Balance before these entries',M+66,{c:mut}); rt(fmt(d.prev),W-M-4,{c:mut}); y-=15; }
-  d.L.forEach((r,i)=>{ if(y<M+30){ newPage(); head(); }
-    if(i%2) pg.drawRectangle({x:M,y:y-4,width:W-2*M,height:14,color:rgb(.975,.98,.99)});
-    const det=r.kind==='MAIL'?r.remark+(r.cartons>1||r.pcs>1?' ('+r.cartons+' x '+r.pcs+')':''):r.kind==='PAYMENT'?'Payment received ('+(r.mode==='BANK'?'Bank':'Cash')+')'+(r.remark?' '+r.remark:''):(r.remark||'Extra charge');
-    txt(fd(r.date),M+4); txt(cut(det,215),M+66); if(r.kind==='MAIL'&&r.price) rt(fmt(r.price),335);
-    if(r.total) rt(fmt(r.total),405); if(r.payment) rt(fmt(r.payment),470,{c:rgb(.08,.5,.25)}); rt(fmt(r.pending),W-M-4,{b:1}); y-=15; });
-  pages.forEach((p,i)=>{ p.drawText('Page '+(i+1)+' of '+pages.length,{x:W-M-60,y:16,size:8,font:F,color:mut}); });
+  const {PDFDocument,StandardFonts,rgb}=PDFLib, doc=await PDFDocument.create(), F=await doc.embedFont(StandardFonts.Helvetica), B=await doc.embedFont(StandardFonts.HelveticaBold), I=await doc.embedFont(StandardFonts.HelveticaOblique);
+  const W=595,H=842,M=36,R=W-M, NAVY=rgb(.11,.14,.33), ACC=rgb(.31,.27,.9), INK=rgb(.1,.12,.2), MUT=rgb(.42,.46,.56), LN=rgb(.89,.91,.95), GRN=rgb(.06,.47,.24), RED=rgb(.74,.1,.25), WHITE=rgb(1,1,1);
+  const san=t=>String(t==null?'':t).replace(/[^\x20-\x7E]/g,'?'), money=n=>n<-0.005?'Adv '+fmt(-n):fmt(n);
+  const biz=($('#wa_biz').value||'').trim()||'Your Business', cline=($('#wa_bl').value||'').trim();
+  const pages=[]; let pg, y;
+  const T=(t,x,yy,o={})=>pg.drawText(san(t),{x,y:yy,size:o.s||9,font:o.f||(o.b?B:F),color:o.c||INK});
+  const RT=(t,xr,yy,o={})=>{ t=san(t); const f=o.f||(o.b?B:F); pg.drawText(t,{x:xr-f.widthOfTextAtSize(t,o.s||9),y:yy,size:o.s||9,font:f,color:o.c||INK}); };
+  const cut=(t,w,s)=>{ t=san(t); while(t.length>1&&F.widthOfTextAtSize(t,s)>w) t=t.slice(0,-1); return t; };
+  const X={date:M+8,part:M+66,qty:300,rate:352,sales:420,recv:486,bal:R-8};
+  const thead=()=>{ pg.drawRectangle({x:M,y:y-6,width:R-M,height:20,color:NAVY}); const o={b:1,s:7.5,c:WHITE};
+    T('DATE',X.date,y,o); T('PARTICULARS',X.part,y,o); RT('QTY',X.qty,y,o); RT('RATE',X.rate,y,o); RT('SALES',X.sales,y,o); RT('RECEIVED',X.recv,y,o); RT('BALANCE',X.bal,y,o); y-=24; };
+  const newPage=first=>{ pg=doc.addPage([W,H]); pages.push(pg);
+    if(first){ pg.drawRectangle({x:0,y:H-78,width:W,height:78,color:NAVY}); pg.drawRectangle({x:0,y:H-82,width:W,height:4,color:ACC});
+      T(biz,M,H-38,{b:1,s:20,c:WHITE}); if(cline) T(cline,M,H-58,{s:9,c:rgb(.8,.84,.96)});
+      RT('ACCOUNT STATEMENT',R,H-34,{b:1,s:12,c:WHITE}); RT('Date: '+fd(nowIso()),R,H-54,{s:9,c:rgb(.8,.84,.96)}); y=H-112; }
+    else { pg.drawRectangle({x:0,y:H-34,width:W,height:34,color:NAVY}); T(biz,M,H-22,{b:1,s:11,c:WHITE}); RT('Statement: '+d.name+' (continued)',R,H-22,{s:9,c:WHITE}); y=H-62; } };
+  const sales=d.L.reduce((a,r)=>a+r.total,0), recv=d.L.reduce((a,r)=>a+r.payment,0), f=d.f, first=d.L[0], last=d.L[d.L.length-1];
+  newPage(true);
+  T('STATEMENT FOR',M,y,{s:7.5,c:MUT,b:1}); y-=17; T(d.name,M,y,{b:1,s:17}); y-=15;
+  T(d.L.length?'Period: '+fd(first.date)+' to '+fd(last.date)+'   |   '+d.L.length+' entries':'No entries',M,y,{s:9,c:MUT}); y-=26;
+  const cw=(R-M-30)/4, cards=[['OPENING BALANCE',money(d.prev),INK,rgb(.96,.97,.99)],['SALES',fmt(sales),INK,rgb(.96,.97,.99)],['PAYMENTS RECEIVED',fmt(recv),GRN,rgb(.93,.98,.95)],[f<-0.005?'ADVANCE (JAMA)':'BALANCE DUE',fmt(Math.abs(f)),f<-0.005?GRN:RED,f<-0.005?rgb(.9,.97,.92):rgb(1,.93,.94)]];
+  cards.forEach((c,i)=>{ const x=M+i*(cw+10); pg.drawRectangle({x,y:y-40,width:cw,height:46,color:c[3],borderColor:LN,borderWidth:.6}); T(c[0],x+9,y-8,{s:6.8,c:MUT,b:1}); T('Rs. '+c[1],x+9,y-28,{b:1,s:12,c:c[2]}); });
+  y-=70; thead();
+  const rowH=17, line=()=>pg.drawLine({start:{x:M,y:y-5},end:{x:R,y:y-5},thickness:.4,color:LN});
+  if(d.L.length<d.rows.length||d.p.opening_balance){ T('Balance brought forward',X.part,y,{f:I,s:8.5,c:MUT}); RT(money(d.prev),X.bal,y,{c:MUT}); line(); y-=rowH; }
+  d.L.forEach((r,i)=>{ if(y<M+70){ newPage(false); thead(); }
+    if(i%2===0) pg.drawRectangle({x:M,y:y-5,width:R-M,height:rowH,color:rgb(.975,.98,.995)});
+    const isP=r.kind==='PAYMENT', det=isP?'Payment received - '+(r.mode==='BANK'?'Bank':'Cash')+(r.remark?' ('+r.remark+')':''):r.kind==='EXTRA'?(r.remark||'Extra charge'):r.remark;
+    T(fd(r.date),X.date,y,{s:8.5}); T(cut(det,X.qty-X.part-40,8.5),X.part,y,{s:8.5,c:isP?GRN:INK});
+    if(r.kind==='MAIL'&&(r.cartons>1||r.pcs>1)) RT(r.cartons+' x '+r.pcs,X.qty,y,{s:8.5,c:MUT}); if(r.kind==='MAIL'&&r.price) RT(fmt(r.price),X.rate,y,{s:8.5,c:MUT});
+    if(r.total) RT(fmt(r.total),X.sales,y,{s:8.5}); if(r.payment) RT(fmt(r.payment),X.recv,y,{s:8.5,c:GRN,b:1}); RT(money(r.pending),X.bal,y,{s:8.5,b:1,c:r.pending<-0.005?GRN:INK}); line(); y-=rowH; });
+  if(y<M+110){ newPage(false); }
+  y-=6; pg.drawRectangle({x:M,y:y-8,width:R-M,height:22,color:rgb(.93,.94,1)}); T('TOTAL',X.part,y,{b:1,s:9}); RT(fmt(sales),X.sales,y,{b:1,s:9}); RT(fmt(recv),X.recv,y,{b:1,s:9,c:GRN}); RT(money(f),X.bal,y,{b:1,s:9,c:f<-0.005?GRN:RED}); y-=44;
+  pg.drawRectangle({x:M,y:y-34,width:R-M,height:46,color:f<-0.005?rgb(.9,.97,.92):rgb(1,.93,.94),borderColor:f<-0.005?GRN:RED,borderWidth:.8});
+  T(f<-0.005?'CLOSING BALANCE - ADVANCE IN YOUR FAVOUR':'CLOSING BALANCE - PLEASE PAY',M+14,y-8,{b:1,s:8,c:MUT}); T('Rs. '+fmt(Math.abs(f)),M+14,y-28,{b:1,s:17,c:f<-0.005?GRN:RED});
+  pages.forEach((p,i)=>{ p.drawLine({start:{x:M,y:44},end:{x:R,y:44},thickness:.5,color:LN}); p.drawText('This is a computer generated statement.'+(cline?'  '+san(cline):''),{x:M,y:30,size:7.5,font:F,color:MUT});
+    const pt='Page '+(i+1)+' of '+pages.length; p.drawText(pt,{x:R-F.widthOfTextAtSize(pt,7.5),y:30,size:7.5,font:F,color:MUT}); });
   const bytes=await doc.save(); return new File([bytes],'Statement_'+d.name.replace(/[^\w]+/g,'_')+'_'+nowIso().slice(0,10)+'.pdf',{type:'application/pdf'});
 }
-async function waPrep(){ waFile=null; const d=waData(); if(!d) return; $('#wa_ps').textContent=''; const my=waRows=d;
+async function waPrep(){ try{ localStorage.setItem('biz_n',$('#wa_biz').value); localStorage.setItem('biz_l',$('#wa_bl').value); }catch(e){} waFile=null; const d=waData(); if(!d) return; $('#wa_ps').textContent=''; const my=waRows=d;
   try{ const f=await waPdf(d); if(waRows===my){ waFile=f; $('#wa_ps').textContent='(ready)'; } }
   catch(e){ $('#wa_ps').textContent='(PDF not available: '+e.message+')'; } }
 function waOpen(){ const name=pname($('#lp').value); if(!name) return say('Select a customer in the box above first',true);
+  $('#wa_biz').value=localStorage.getItem('biz_n')||''; $('#wa_bl').value=localStorage.getItem('biz_l')||'';
   $('#wa_ph').value=localStorage.getItem('ph_'+name)||''; $('#wa_t').value=waBuild(); $('#wad').showModal(); waPrep(); }
 function waRefresh(){ $('#wa_t').value=waBuild(); waPrep(); }
+async function waDownload(){ if(!waFile) await waPrep(); if(!waFile) return say('PDF could not be created',true);
+  const a=document.createElement('a'); a.href=URL.createObjectURL(waFile); a.download=waFile.name; document.body.appendChild(a); a.click(); a.remove(); }
 async function waSend(){
   const name=pname($('#lp').value); let ph=$('#wa_ph').value.replace(/\D/g,''); if(ph.length===10) ph='91'+ph;
   if($('#wa_ph').value.trim()) localStorage.setItem('ph_'+name,$('#wa_ph').value.trim());
@@ -625,5 +648,5 @@ sortable('#led',['date','','remark','cartons','pcs','price','total','cash','bank
 sortable('#tp',['n','ord','ctn','pcs','val','avg','val'],aP,drawAna);
 sortable('#tq',['n','ord','ctn','val','avg','pay','val'],aQ,drawAna);
 if(DEFAULT_URL) $('#urlrow').classList.add('hide');
-if(API&&KEY){ $('#au').value=API; $('#pw').value=KEY; signIn(); } else { $('#login').classList.remove('hide'); if(API) $('#au').value=API; }
+if(API&&KEY){ $('#au').value=API; $('#pw').value=KEY; $('#login').classList.remove('hide'); signIn(); } else { $('#login').classList.remove('hide'); if(API) $('#au').value=API; }
 </script></body></html>
