@@ -117,7 +117,7 @@ th.srt{cursor:pointer;user-select:none}th.srt:hover{filter:brightness(1.3)}th.sr
 <div id="bil" class="tab hide">
 <div id="bl_list"><div class="card bar noprint"><div style="flex:1"><label>Search bill no. / customer</label><input id="bl_q" placeholder="e.g. B0001 or customer name" oninput="billsDraw()"></div><button class="pri" onclick="billNew()">+ New bill</button></div>
 <div class="card wrap"><table><thead><tr><th>Bill no.</th><th>Date</th><th>Customer</th><th class="n">Items</th><th class="n">Bill total</th><th></th></tr></thead><tbody id="bl_b"></tbody></table></div></div>
-<div id="bl_det" class="hide"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><button class="btn" onclick="billBack()">&larr; All bills</button></div><div><button class="btn" onclick="billPdf(bCur.no,bCur.party)">Download Bill PDF</button></div></div>
+<div id="bl_det" class="hide"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><button class="btn" onclick="billBack()">&larr; All bills</button></div><div><button class="btn" onclick="billPdf(bCur.no,bCur.party)">Download Bill PDF</button> <button class="btn" onclick="billPdf(bCur.no,bCur.party,false,true)">Download Image</button></div></div>
 <h3 id="bd_t" style="margin:14px 0 4px"></h3><div id="bd_s" style="color:var(--mut);font-size:13px;margin-bottom:12px"></div>
 <div class="wrap" style="max-height:340px;overflow:auto"><table class="at" style="min-width:0"><thead><tr><th>Product</th><th class="n">Cartons</th><th class="n">Pcs / Carton</th><th class="n">Price</th><th class="n">Total</th><th></th></tr></thead><tbody id="bd_b"></tbody></table></div>
 <div style="text-align:right;margin-top:10px;font-size:16px"><b id="bd_tot"></b></div></div>
@@ -142,7 +142,7 @@ th.srt{cursor:pointer;user-select:none}th.srt:hover{filter:brightness(1.3)}th.sr
 <div class="card sidep"><div id="pimg"></div><small>Entry Total</small><b id="pvT">&#8377; 0.00</b><i id="pvF"></i><hr><small>Current Pending</small><b id="pcur">-</b><small>After this entry</small><b id="pnew">-</b></div>
 </div></div>
 <dialog id="imd"><b style="font-size:16px">Product images</b><p style="color:var(--mut);font-size:12px">Paste one product per line: PRODUCT NAME, then the image link (copy from Excel or write NAME [space] https://...). Existing images are replaced.</p><textarea id="im_t" rows="9" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:12px monospace"></textarea><p style="text-align:right;margin-bottom:0"><button class="btn" onclick="$('#imd').close()">Cancel</button> <button class="pri" onclick="importImgs()">Save images</button></p></dialog>
-<dialog id="pvd" style="width:min(900px,96vw);height:92vh;padding:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px"><b id="pv_t">Preview</b><span><button class="pri" onclick="pvDownload()">Download PDF</button> <button class="btn" onclick="pvClose()">Close</button></span></div><iframe id="pv_f" style="width:100%;height:calc(100% - 44px);border:1px solid var(--line);border-radius:8px;background:#fff"></iframe></dialog>
+<dialog id="pvd" style="width:min(900px,96vw);height:92vh;padding:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px"><b id="pv_t">Preview</b><span><button class="pri" onclick="pvDownload()">Download PDF</button> <button class="btn" onclick="pvImage()">Download Image</button> <button class="btn" onclick="pvClose()">Close</button></span></div><iframe id="pv_f" style="width:100%;height:calc(100% - 44px);border:1px solid var(--line);border-radius:8px;background:#fff"></iframe></dialog>
 <dialog id="wad" style="width:min(460px,94vw)"><b style="font-size:16px">Statement details</b>
 <label>Business name (shown on PDF)</label><input id="wa_biz" placeholder="e.g. Cheaperzone">
 <label>Contact line (phone, website)</label><input id="wa_bl" placeholder="e.g. +91 98XXXXXXXX | cheaperzone.in">
@@ -262,8 +262,9 @@ async function billAdd(){
 }
 
 // ---------- Preview (bill / receipt) with Download
-var pvF=null;
-async function pvOpen(kind,key,party){ const f=kind==='PAYMENT'?await receiptPdf(key,party,true):await billPdf(key,party,true); if(!f) return; pvF=f;
+var pvF=null, pvA=null;
+async function pvImage(){ if(!pvA) return; await (pvA.kind==='PAYMENT'?receiptPdf(pvA.key,pvA.party,false,true):billPdf(pvA.key,pvA.party,false,true)); }
+async function pvOpen(kind,key,party){ pvA={kind,key,party}; const f=kind==='PAYMENT'?await receiptPdf(key,party,true):await billPdf(key,party,true); if(!f) return; pvF=f;
   $('#pv_t').textContent=(kind==='PAYMENT'?'Payment receipt':'Bill')+' preview \u00B7 '+party; $('#pv_f').src=URL.createObjectURL(f); $('#pvd').showModal(); }
 function pvClose(){ $('#pv_f').src='about:blank'; $('#pvd').close(); }
 function pvDownload(){ if(!pvF) return; const a=document.createElement('a'); a.href=URL.createObjectURL(pvF); a.download=pvF.name; document.body.appendChild(a); a.click(); a.remove(); }
@@ -281,6 +282,22 @@ async function delBill(bn,party){ const it=D.mail.filter(r=>live(r)&&r.party===p
   try{ for(const r of it){ await call('delete',{sheet:SHEET.MAIL,id:r.id}); } const ids=new Set(it.map(r=>r.id)); D.mail=D.mail.filter(r=>!ids.has(r.id)); refresh(); queueSync(party); redraw(); loadLedger(); say('✓ Bill '+bn+' deleted'); }
   catch(e){ say(e.message,true); } }
 async function markBill(bn,party,on){ const it=D.mail.filter(r=>live(r)&&r.party===party&&String(r.bill_no||'')===bn); for(const r of it){ await upd('MAIL',r.id,{matched_at:on?'':nowIso()}); } loadLedger(); }
+
+// ---------- Canvas drawing shim (same drawing calls as pdf-lib) -> PNG image
+const CVLIB=(function(){ const S=2, mc=document.createElement('canvas').getContext('2d'), css=c=>'rgb('+Math.round(c.r*255)+','+Math.round(c.g*255)+','+Math.round(c.b*255)+')';
+  const font=b=>({b,widthOfTextAtSize(t,s){ mc.font=(b?'bold ':'')+s+'px Helvetica, Arial, sans-serif'; return mc.measureText(t).width; }});
+  class Pg{ constructor(W,H){ this.W=W; this.H=H; this.low=H; this.c=document.createElement('canvas'); this.c.width=W*S; this.c.height=H*S; this.x=this.c.getContext('2d'); this.x.scale(S,S); this.x.fillStyle='#fff'; this.x.fillRect(0,0,W,H); }
+    mark(y){ if(y>=60&&y<this.low) this.low=y; }
+    drawText(t,o){ const x=this.x; x.font=(o.font&&o.font.b?'bold ':'')+o.size+'px Helvetica, Arial, sans-serif'; x.fillStyle=css(o.color); x.textBaseline='alphabetic'; x.fillText(String(t),o.x,this.H-o.y); this.mark(o.y); }
+    drawRectangle(o){ const x=this.x, t=this.H-o.y-o.height; if(o.color){ x.fillStyle=css(o.color); x.fillRect(o.x,t,o.width,o.height); } if(o.borderColor){ x.strokeStyle=css(o.borderColor); x.lineWidth=o.borderWidth||1; x.strokeRect(o.x,t,o.width,o.height); } this.mark(o.y); }
+    drawLine(o){ const x=this.x; x.strokeStyle=css(o.color); x.lineWidth=o.thickness||1; x.beginPath(); x.moveTo(o.start.x,this.H-o.start.y); x.lineTo(o.end.x,this.H-o.end.y); x.stroke(); }
+    drawCircle(o){ const x=this.x; x.beginPath(); x.arc(o.x,this.H-o.y,o.size,0,Math.PI*2); if(o.color){ x.fillStyle=css(o.color); x.fill(); } if(o.borderColor){ x.strokeStyle=css(o.borderColor); x.lineWidth=o.borderWidth||1; x.stroke(); } } }
+  const doc={ pages:[], async embedFont(n){ return font(/Bold/.test(String(n))); }, addPage(sz){ const p=new Pg(sz[0],sz[1]); this.pages.push(p); return p; },
+    async png(name){ const P=this.pages, hs=P.map(p=>Math.min(p.H,p.H-p.low+36)), W=P[0].W, out=document.createElement('canvas'); out.width=W*S; out.height=hs.reduce((a,b)=>a+b,0)*S;
+      const x=out.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,out.width,out.height); let y=0; P.forEach((p,i)=>{ x.drawImage(p.c,0,0,p.c.width,hs[i]*S,0,y,p.c.width,hs[i]*S); y+=hs[i]*S; });
+      const b=await new Promise(r=>out.toBlob(r,'image/png')); return new File([b],name,{type:'image/png'}); } };
+  return { PDFDocument:{ create:async()=>{ doc.pages=[]; return doc; } }, StandardFonts:{Helvetica:'Helvetica',HelveticaBold:'HelveticaBold',HelveticaOblique:'HelveticaOblique'}, rgb:(r,g,b)=>({r,g,b}) };
+})();
 function bnoFill(){ const e=$('#f_bno'); if(e&&!e.value) e.value=nextBill(); }
 function nextBill(k){ let mx=0; D.mail.forEach(r=>{ const m=/^B(\d+)$/i.exec(String(r.bill_no||'').trim()); if(m) mx=Math.max(mx,+m[1]); }); return 'B'+String(mx+1+(k||0)).padStart(4,'0'); }
 function ledgerRows(D,mult,name,opening){
@@ -292,7 +309,7 @@ function ledgerRows(D,mult,name,opening){
   let p=opening; o.forEach(r=>{p+=r.total-r.payment; r.pending=p;}); return o;
 }
 //CALC-END
-const DEFAULT_URL="https://script.google.com/macros/s/AKfycbxZ5b5L6nqvQe9vFw1nXfWuWPQsQs7WNRKolSDXWBqMdmtkTi3PBytLqfl1b46-CKNH2A/exec"; // optional: paste your Web App URL here so it is never asked again
+const DEFAULT_URL=""; // optional: paste your Web App URL here so it is never asked again
 let imgs={}; const IU=n=>imgs[String(n).trim().toUpperCase()]||'';
 const thumb=(n,edit)=>{ const u=IU(n); return u?`<img class="th" loading="lazy" src="${esc(u)}" alt="" onerror="this.style.display='none'">`:(edit?`<span class="th th0" title="Add image" data-n="${esc(n)}" onclick="setImg(this.dataset.n)">+</span>`:''); };
 let API=localStorage.getItem('gs_url')||DEFAULT_URL, KEY=localStorage.getItem('gs_key')||'';
@@ -703,12 +720,12 @@ async function stPrint(){ const f=await stFile(); if(!f) return; const u=URL.cre
   if(w) say('PDF opened in a new tab. Press Ctrl+P (Cmd+P on Mac) to print.'); else { const a=document.createElement('a'); a.href=u; a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); say('Pop-up was blocked, so the PDF was downloaded. Open it and print.'); } }
 
 // ---------- Bill PDF (one bill = all entries with the same Bill No for a customer)
-async function billPdf(bn,pty,pv){
+async function billPdf(bn,pty,pv,img){
   const name=pty||pname($('#lp').value); if(!name){ say('Select a customer first',true); return; }
   const p=parties.find(x=>x.party_name===name), rows=ledgerRows(D,mult,name,p.opening_balance), B=String(bn).startsWith('row:')?rows.filter(r=>r.kind==='MAIL'&&r.id===bn.slice(4)):rows.filter(r=>r.kind==='MAIL'&&r.bill===bn); const bl=String(bn).startsWith('row:')?'-':bn;
   if(!B.length){ say('Bill not found',true); return; } stInit();
   try{
-    const {PDFDocument,StandardFonts,rgb}=PDFLib, doc=await PDFDocument.create(), F=await doc.embedFont(StandardFonts.Helvetica), Bd=await doc.embedFont(StandardFonts.HelveticaBold);
+    const {PDFDocument,StandardFonts,rgb}=(img?CVLIB:PDFLib), doc=await PDFDocument.create(), F=await doc.embedFont(StandardFonts.Helvetica), Bd=await doc.embedFont(StandardFonts.HelveticaBold);
     const W=595,H=842,M=36,R=W-M, NAVY=rgb(.11,.14,.33), ACC=rgb(.31,.27,.9), INK=rgb(.1,.12,.2), MUT=rgb(.42,.46,.56), LN=rgb(.89,.91,.95), WHITE=rgb(1,1,1), RED=rgb(.74,.1,.25), GRN=rgb(.06,.47,.24);
     const san=t=>String(t==null?'':t).replace(/[^\x20-\x7E]/g,'?'), biz=($('#wa_biz').value||'').trim()||'Cheaperzone', cline=($('#wa_bl').value||'').trim();
     let pg, y; const pages=[];
@@ -735,18 +752,18 @@ async function billPdf(bn,pty,pv){
     pg.drawLine({start:{x:bx+12,y:y-20},end:{x:R-12,y:y-20},thickness:.4,color:LN}); const after=prevBal+total;
     T(after<-0.005?'Advance after this bill':'Total payable',bx+12,y-38,{b:1,s:9.5}); RT('Rs. '+fmt(Math.abs(after)),R-12,y-38,{b:1,s:11.5,c:after<-0.005?GRN:RED});
     pages.forEach((q,i)=>{ q.drawLine({start:{x:M,y:44},end:{x:R,y:44},thickness:.5,color:LN}); q.drawText('Thank you for your business.'+(cline?'  '+san(cline):''),{x:M,y:30,size:7.5,font:F,color:MUT}); const t='Page '+(i+1)+' of '+pages.length; q.drawText(t,{x:R-F.widthOfTextAtSize(t,7.5),y:30,size:7.5,font:F,color:MUT}); });
-    const bytes=await doc.save(), f=new File([bytes],'Bill_'+String(bn).replace(/[^\w]+/g,'_')+'_'+name.replace(/[^\w]+/g,'_')+'.pdf',{type:'application/pdf'});
-    if(pv) return f; const a=document.createElement('a'); a.href=URL.createObjectURL(f); a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); say('✓ Bill PDF downloaded');
+    const fn='Bill_'+String(bn).replace(/[^\w]+/g,'_')+'_'+name.replace(/[^\w]+/g,'_'), f=img?await doc.png(fn+'.png'):new File([await doc.save()],fn+'.pdf',{type:'application/pdf'});
+    if(pv) return f; const a=document.createElement('a'); a.href=URL.createObjectURL(f); a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); say('✓ Bill '+(img?'image':'PDF')+' downloaded');
   }catch(e){ say('Bill PDF failed: '+e.message,true); }
 }
 
 // ---------- Payment Receipt PDF (one payment entry)
-async function receiptPdf(id,pty,pv){
+async function receiptPdf(id,pty,pv,img){
   const name=pty||pname($('#lp').value); if(!name){ say('Select a customer first',true); return; }
   const p=parties.find(x=>x.party_name===name), rows=ledgerRows(D,mult,name,p.opening_balance), r=rows.find(x=>x.kind==='PAYMENT'&&x.id===id);
   if(!r){ say('Payment not found',true); return; } stInit();
   try{
-    const {PDFDocument,StandardFonts,rgb}=PDFLib, doc=await PDFDocument.create(), F=await doc.embedFont(StandardFonts.Helvetica), Bd=await doc.embedFont(StandardFonts.HelveticaBold);
+    const {PDFDocument,StandardFonts,rgb}=(img?CVLIB:PDFLib), doc=await PDFDocument.create(), F=await doc.embedFont(StandardFonts.Helvetica), Bd=await doc.embedFont(StandardFonts.HelveticaBold);
     const W=595,H=842,M=36,R=W-M, NAVY=rgb(.11,.14,.33), ACC=rgb(.31,.27,.9), INK=rgb(.1,.12,.2), MUT=rgb(.42,.46,.56), LN=rgb(.89,.91,.95), WHITE=rgb(1,1,1), RED=rgb(.74,.1,.25), GRN=rgb(.06,.47,.24);
     const san=t=>String(t==null?'':t).replace(/[^\x20-\x7E]/g,'?'), biz=($('#wa_biz').value||'').trim()||'Cheaperzone', cline=($('#wa_bl').value||'').trim();
     const pg=doc.addPage([W,H]); let y=H-112;
@@ -763,8 +780,8 @@ async function receiptPdf(id,pty,pv){
     const sg=v=>(v<-0.005?'Adv ':'')+'Rs. '+fmt(Math.abs(v));
     rowT('Balance before this payment',sg(before)); rowT('Payment received',sg(-r.payment).replace('Adv ','- ')); rowT(after<-0.005?'Advance (in your favour)':'Balance due',sg(after),{b:1,bg:rgb(.93,.94,1),c2:after<-0.005?GRN:RED});
     pg.drawLine({start:{x:M,y:44},end:{x:R,y:44},thickness:.5,color:LN}); pg.drawText('Thank you. '+san(cline||''),{x:M,y:30,size:7.5,font:F,color:MUT});
-    const bytes=await doc.save(), f=new File([bytes],'Receipt_'+name.replace(/[^\w]+/g,'_')+'_'+r.date+'.pdf',{type:'application/pdf'});
-    if(pv) return f; const a=document.createElement('a'); a.href=URL.createObjectURL(f); a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); say('✓ Receipt PDF downloaded');
+    const fn='Receipt_'+name.replace(/[^\w]+/g,'_')+'_'+r.date, f=img?await doc.png(fn+'.png'):new File([await doc.save()],fn+'.pdf',{type:'application/pdf'});
+    if(pv) return f; const a=document.createElement('a'); a.href=URL.createObjectURL(f); a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); say('✓ Receipt '+(img?'image':'PDF')+' downloaded');
   }catch(e){ say('Receipt PDF failed: '+e.message,true); }
 }
 async function backup(){ say('Creating backup...'); try{ const n=await call('backup'); say('✓ Backup created: '+n+' (in Google Drive)'); }catch(e){ say(e.message,true); } }
