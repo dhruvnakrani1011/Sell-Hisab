@@ -45,7 +45,7 @@ tr.m td:first-child{box-shadow:inset 4px 0 0 var(--ok)}tr.s td{background:var(--
 .tag{display:inline-block;font-size:11px;font-weight:700;color:var(--ok);background:var(--card);border:1px solid var(--ok);border-radius:10px;padding:0 8px;margin-left:6px}
 .note{display:block;font-size:12px;color:var(--mut);font-style:italic}
 .ic{border:1px solid var(--line);background:var(--card);border-radius:8px;width:27px;height:27px;margin-left:2px;line-height:1}.ic:hover{border-color:var(--pri)}.ic.ok{background:var(--ok);color:#fff;border-color:var(--ok)}.ic.del{color:var(--red)}
-#led thead th:nth-child(2),#lb td:nth-child(2){display:none}#lb td:nth-child(3){min-width:180px}#led td,#led th{padding:9px 8px}.card.wrap{padding:0;overflow:auto;max-height:calc(100vh - 330px);min-height:300px}
+#lb td:nth-child(3){min-width:200px}#led td,#led th{padding:9px 8px}.card.wrap{padding:0;overflow:auto;max-height:calc(100vh - 330px);min-height:300px}
 #stot td{position:sticky;top:calc(var(--h,38px) - 1px);z-index:3;background:var(--card);font-weight:700;border-bottom:2px solid var(--line)}
 th{z-index:4}
 .ent-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start;max-width:1000px}
@@ -112,7 +112,7 @@ th.srt{cursor:pointer;user-select:none}th.srt:hover{filter:brightness(1.3)}th.sr
 <button class="btn" onclick="stPrint()">Print</button><button class="btn" onclick="stDownload()">Download PDF</button><button class="btn" title="Statement details (business name, entries)" onclick="stOpen()">&#9881;</button></div>
 <div class="card kpi"><div><small>Party</small><b id="k0">-</b></div><div><small>Opening Balance</small><b id="k1">-</b></div>
 <div><small>Final Pending</small><b id="k2">-</b></div><div><small>Last Matched</small><b id="k3">-</b><i id="k4"></i></div></div>
-<div class="card wrap"><table><thead><tr><th>Date</th><th>Party Name</th><th>Product Name</th><th class="n">Cartons</th><th class="n">Pcs / Carton</th><th class="n">Original Price</th><th class="n">Original Total</th><th class="n">Cash Payment</th><th class="n">Bank Payment</th><th class="n">Pending</th><th class="noprint act"></th></tr></thead><tbody id="lb"></tbody></table></div></div>
+<div class="card wrap"><table><thead><tr><th>Date</th><th>Bill No.</th><th>Party Name</th><th class="n">Amount</th><th class="n">Cash</th><th class="n">Bank</th><th class="n">Pending</th><th class="noprint act"></th></tr></thead><tbody id="lb"></tbody></table></div></div>
 
 <div id="bil" class="tab hide">
 <div id="bl_list"><div class="card bar noprint"><div style="flex:1"><label>Search bill no. / customer</label><input id="bl_q" placeholder="e.g. B0001 or customer name" oninput="billsDraw()"></div><button class="pri" onclick="billNew()">+ New bill</button></div>
@@ -142,6 +142,7 @@ th.srt{cursor:pointer;user-select:none}th.srt:hover{filter:brightness(1.3)}th.sr
 <div class="card sidep"><div id="pimg"></div><small>Entry Total</small><b id="pvT">&#8377; 0.00</b><i id="pvF"></i><hr><small>Current Pending</small><b id="pcur">-</b><small>After this entry</small><b id="pnew">-</b></div>
 </div></div>
 <dialog id="imd"><b style="font-size:16px">Product images</b><p style="color:var(--mut);font-size:12px">Paste one product per line: PRODUCT NAME, then the image link (copy from Excel or write NAME [space] https://...). Existing images are replaced.</p><textarea id="im_t" rows="9" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:12px monospace"></textarea><p style="text-align:right;margin-bottom:0"><button class="btn" onclick="$('#imd').close()">Cancel</button> <button class="pri" onclick="importImgs()">Save images</button></p></dialog>
+<dialog id="pvd" style="width:min(900px,96vw);height:92vh;padding:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px"><b id="pv_t">Preview</b><span><button class="pri" onclick="pvDownload()">Download PDF</button> <button class="btn" onclick="pvClose()">Close</button></span></div><iframe id="pv_f" style="width:100%;height:calc(100% - 44px);border:1px solid var(--line);border-radius:8px;background:#fff"></iframe></dialog>
 <dialog id="wad" style="width:min(460px,94vw)"><b style="font-size:16px">Statement details</b>
 <label>Business name (shown on PDF)</label><input id="wa_biz" placeholder="e.g. Cheaperzone">
 <label>Contact line (phone, website)</label><input id="wa_bl" placeholder="e.g. +91 98XXXXXXXX | cheaperzone.in">
@@ -166,7 +167,7 @@ th.srt{cursor:pointer;user-select:none}th.srt:hover{filter:brightness(1.3)}th.sr
 <div style="margin-left:auto"><button class="btn" onclick="window.print()">Print</button></div></div>
 <input type="hidden" id="lf_by" value="created"><input type="hidden" id="lf_kind" value=""></div>
 <div class="card kpi"><div><small>Entries</small><b id="lk1">-</b></div><div><small>Sales + Extra</small><b id="lk2">-</b></div><div><small>Payment</small><b id="lk3">-</b></div></div>
-<div class="card wrap"><table><thead><tr><th>Date</th><th>Customer</th><th>Details</th><th class="n">Cartons x Pcs</th><th class="n">Price</th><th class="n">Amount</th><th>Entered at</th><th class="noprint"></th></tr></thead><tbody id="ll"></tbody></table></div></div>
+<div class="card wrap"><table><thead><tr><th>Date</th><th>Bill No.</th><th>Party Name</th><th>Type</th><th class="n">Amount</th><th class="noprint"></th></tr></thead><tbody id="ll"></tbody></table></div></div>
 <div id="ana" class="tab hide"><div class="card noprint"><div class="frow">
 <div><div class="flab">Period</div><div class="pills" id="ap"><button class="pill" data-r="m">This month</button><button class="pill" data-r="30">Last 30 days</button><button class="pill" data-r="90">Last 90 days</button><button class="pill" data-r="y">This year</button><button class="pill on" data-r="all">All time</button></div></div>
 <div><div class="flab">From</div><input type="date" id="a_from" onchange="anaCustom()"></div><div><div class="flab">To</div><input type="date" id="a_to" onchange="anaCustom()"></div></div>
@@ -259,6 +260,27 @@ async function billAdd(){
     refresh(); queueSync(bCur.party); ['ba_p','ba_c','ba_pc','ba_pr'].forEach(i=>$('#'+i).value=''); billDetail(); say('✓ Item added to bill '+bCur.no); $('#ba_p').focus();
   }catch(e){ say('Save failed: '+e.message,true); }
 }
+
+// ---------- Preview (bill / receipt) with Download
+var pvF=null;
+async function pvOpen(kind,key,party){ const f=kind==='PAYMENT'?await receiptPdf(key,party,true):await billPdf(key,party,true); if(!f) return; pvF=f;
+  $('#pv_t').textContent=(kind==='PAYMENT'?'Payment receipt':'Bill')+' preview \u00B7 '+party; $('#pv_f').src=URL.createObjectURL(f); $('#pvd').showModal(); }
+function pvClose(){ $('#pv_f').src='about:blank'; $('#pvd').close(); }
+function pvDownload(){ if(!pvF) return; const a=document.createElement('a'); a.href=URL.createObjectURL(pvF); a.download=pvF.name; document.body.appendChild(a); a.click(); a.remove(); }
+
+// ---------- One line per bill (Ledger + Entry List)
+function ledGroup(rows){ const last=new Map(), g=new Map(); rows.forEach((r,i)=>{ if(r.kind==='MAIL'&&r.bill){ last.set(r.bill,i); (g.get(r.bill)||g.set(r.bill,[]).get(r.bill)).push(r); } });
+  const out=[]; rows.forEach((r,i)=>{ if(r.kind==='MAIL'&&r.bill){ if(last.get(r.bill)!==i) return; const it=g.get(r.bill);
+    out.push({kind:'BILL',bill:r.bill,id:it[0].id,ids:it.map(x=>x.id),n:it.length,date:it.map(x=>x.date).sort()[0],names:it.map(x=>x.remark),total:it.reduce((a,x)=>a+x.total,0),payment:0,mode:null,pending:r.pending,m:it.every(x=>x.m)?it[0].m:'',note:'',party:r.party}); } else out.push(r); }); return out; }
+function listGroup(L){ const first=new Map(), g=new Map(); L.forEach((r,i)=>{ if(r.kind==='MAIL'&&r.bill){ const k=r.party+'\u0001'+r.bill; if(!first.has(k)) first.set(k,i); (g.get(k)||g.set(k,[]).get(k)).push(r); } });
+  const out=[]; L.forEach((r,i)=>{ if(r.kind==='MAIL'&&r.bill){ const k=r.party+'\u0001'+r.bill; if(first.get(k)!==i) return; const it=g.get(k);
+    out.push({kind:'BILL',bill:r.bill,party:r.party,id:it[0].id,n:it.length,date:it.map(x=>x.date).sort()[0],amt:it.reduce((a,x)=>a+x.amt,0),note:'',c:r.c}); } else out.push(r); }); return out; }
+function billEdit(bn,party){ tab('bil'); billOpen(bn,party); }
+async function delBill(bn,party){ const it=D.mail.filter(r=>live(r)&&r.party===party&&String(r.bill_no||'')===bn); if(!it.length) return;
+  if(!confirm('Delete whole bill '+bn+' ('+it.length+' item'+(it.length>1?'s':'')+')? A copy is kept in the "Deleted Log" tab.')) return;
+  try{ for(const r of it){ await call('delete',{sheet:SHEET.MAIL,id:r.id}); } const ids=new Set(it.map(r=>r.id)); D.mail=D.mail.filter(r=>!ids.has(r.id)); refresh(); queueSync(party); redraw(); loadLedger(); say('✓ Bill '+bn+' deleted'); }
+  catch(e){ say(e.message,true); } }
+async function markBill(bn,party,on){ const it=D.mail.filter(r=>live(r)&&r.party===party&&String(r.bill_no||'')===bn); for(const r of it){ await upd('MAIL',r.id,{matched_at:on?'':nowIso()}); } loadLedger(); }
 function bnoFill(){ const e=$('#f_bno'); if(e&&!e.value) e.value=nextBill(); }
 function nextBill(k){ let mx=0; D.mail.forEach(r=>{ const m=/^B(\d+)$/i.exec(String(r.bill_no||'').trim()); if(m) mx=Math.max(mx,+m[1]); }); return 'B'+String(mx+1+(k||0)).padStart(4,'0'); }
 function ledgerRows(D,mult,name,opening){
@@ -329,20 +351,22 @@ function openLedger(name){ $('#lp').value=name; tab('led'); loadLedger(); }
 
 function loadLedger(){
   const name=pname($('#lp').value); if(!name){ $('#lb').innerHTML=''; return say($('#lp').value?'No such party':'',true); }
-  const p=parties.find(x=>x.party_name===name), rows=ledgerRows(D,mult,name,p.opening_balance);
+  let rows; const p=parties.find(x=>x.party_name===name); rows=ledgerRows(D,mult,name,p.opening_balance);
   $('#k0').textContent=name; $('#k1').textContent=fmt(p.opening_balance);
   $('#k2').textContent=p.final_pending<-0.005?'Advance '+fmt(-p.final_pending):fmt(p.final_pending); $('#k2').className=p.final_pending<-0.005?'up':'';
   const lm=[...rows].reverse().find(r=>r.m);
   if(lm){ $('#k3').textContent=fd(lm.date); $('#k4').textContent='Pending at that time: '+fmt(lm.pending)+' · '+(rows.length-1-rows.lastIndexOf(lm))+' entries since'; }
   else { $('#k3').textContent='-'; $('#k4').textContent='No entry marked yet'; }
   rows.forEach(r=>{ r.cash=r.mode==='CASH'?r.payment:0; r.bank=r.mode==='BANK'?r.payment:0; }); if(lG.k) rows.sort((a,b)=>lG.dir*cmpv(a,b,lG.k));
-  $('#lb').innerHTML=rows.map(r=>{
-    const act=`${r.kind==='PAYMENT'?`<button class="ic" title="Receipt PDF" onclick="receiptPdf('${r.id}')">&#129534;</button>`:''}${r.bill?`<button class="ic" title="Bill PDF" onclick="billPdf('${esc(r.bill)}')">&#129534;</button>`:''}<button class="ic ${r.m?'ok':''}" title="Match mark" onclick="mark('${r.kind}','${r.id}',${!!r.m})">✓</button><button class="ic" title="Edit entry" onclick="editRow('${r.kind}','${r.id}')">✎</button><button class="ic" title="Note" data-n="${esc(r.note)}" onclick="editNote('${r.kind}','${r.id}',this)">💬</button><button class="ic del" title="Delete" onclick="del('${r.kind}','${r.id}')">×</button>`;
-    return `<tr class="${r.kind} ${r.m?'m':''}"><td>${fd(r.date)}</td><td>${esc(name)}</td>
-    <td>${r.kind==='PAYMENT'?'<span class="ch p">Payment</span>':r.kind==='EXTRA'?'<span class="ch e">Extra</span>':thumb(r.remark)}${esc(r.remark)}${r.bill?`<span class="tag" style="background:var(--priL);color:var(--pri)">${esc(r.bill)}</span>`:''}${r.m?`<span class="tag">✓ Matched ${fd(r.m)}</span>`:''}${r.note?`<span class="note">${esc(r.note)}</span>`:''}</td>
-    <td class="n">${r.cartons}</td><td class="n">${r.pcs}</td><td class="n">${fmt(r.price)}</td><td class="n">${fmt(r.total)}</td>
+  rows=ledGroup(rows); $('#lb').innerHTML=rows.map(r=>{
+    const pk=r.kind==='BILL'?'MAIL':r.kind, pv=r.kind==='EXTRA'?'':`<button class="btn" style="padding:5px 10px" onclick="pvOpen('${pk}','${pk==='MAIL'?esc(r.bill||('row:'+r.id)):r.id}','${esc(name)}')">Preview</button>`;
+    const act=r.kind==='BILL'?`<button class="ic ${r.m?'ok':''}" title="Match mark (whole bill)" onclick="markBill('${esc(r.bill)}','${esc(name)}',${!!r.m})">✓</button><button class="ic" title="Open / edit bill" onclick="billEdit('${esc(r.bill)}','${esc(name)}')">✎</button><button class="ic del" title="Delete whole bill" onclick="delBill('${esc(r.bill)}','${esc(name)}')">×</button> ${pv}`:`<button class="ic ${r.m?'ok':''}" title="Match mark" onclick="mark('${r.kind}','${r.id}',${!!r.m})">✓</button><button class="ic" title="Edit entry" onclick="editRow('${r.kind}','${r.id}')">✎</button><button class="ic" title="Note" data-n="${esc(r.note)}" onclick="editNote('${r.kind}','${r.id}',this)">💬</button><button class="ic del" title="Delete" onclick="del('${r.kind}','${r.id}')">×</button> ${pv}`;
+    const sub=r.kind==='BILL'?'<b style="color:var(--ink)">'+r.n+' item'+(r.n>1?'s':'')+'</b>: '+esc(r.names.slice(0,3).join(', '))+(r.n>3?' +'+(r.n-3)+' more':''):r.kind==='PAYMENT'?'<span class="ch p">Payment</span> '+esc(r.remark||''):r.kind==='EXTRA'?'<span class="ch e">Extra</span> '+esc(r.remark):esc(r.remark)+' <span style="color:var(--mut)">('+r.cartons+' x '+r.pcs+' @ '+fmt(r.price)+')</span>';
+    return `<tr class="${r.kind} ${r.m?'m':''}"><td>${fd(r.date)}</td><td>${r.bill?`<span class="tag" style="background:var(--priL);color:var(--pri);margin:0">${esc(r.bill)}</span>`:''}</td>
+    <td><b>${esc(name)}</b>${r.m?`<span class="tag">✓ Matched ${fd(r.m)}</span>`:''}<div style="font-size:12px;color:var(--mut);margin-top:2px">${sub}</div>${r.note?`<span class="note">${esc(r.note)}</span>`:''}</td>
+    <td class="n">${r.kind==='PAYMENT'?'':fmt(r.total)}</td>
     <td class="n">${fmt(r.mode==='CASH'?r.payment:0)}</td><td class="n">${fmt(r.mode==='BANK'?r.payment:0)}</td>
-    <td class="n"><b>${fmt(r.pending)}</b></td><td class="noprint n">${act}</td></tr>`}).join('');
+    <td class="n"><b>${fmt(r.pending)}</b></td><td class="noprint n" style="white-space:nowrap">${act}</td></tr>`}).join('');
   say(rows.length+' entries · ✓ matched, ✎ edit, 💬 note, × delete');
 }
 async function upd(kind,id,patch){
@@ -452,7 +476,7 @@ document.querySelectorAll('#bp .pill').forEach(b=>b.onclick=()=>{ $('#lf_by').va
 document.querySelectorAll('#rp .pill').forEach(b=>b.onclick=()=>listRange(+b.dataset.r));
 function allEntries(){
   const o=[], m=mult;
-  D.mail.filter(live).forEach(r=>o.push({kind:'MAIL',id:r.id,date:r.date,party:r.party,remark:r.product,qty:num(r.cartons)+' x '+num(r.pcs),price:num(r.price)*m,amt:num(r.cartons)*num(r.pcs)*num(r.price)*m,mode:'',c:r.created_at||'',seq:r._r,note:r.note}));
+  D.mail.filter(live).forEach(r=>o.push({kind:'MAIL',id:r.id,date:r.date,party:r.party,bill:r.bill_no||'',remark:r.product,qty:num(r.cartons)+' x '+num(r.pcs),price:num(r.price)*m,amt:num(r.cartons)*num(r.pcs)*num(r.price)*m,mode:'',c:r.created_at||'',seq:r._r,note:r.note}));
   D.ext.filter(live).forEach(r=>o.push({kind:'EXTRA',id:r.id,date:r.date,party:r.party,remark:((r.charge_type||'')+' '+(r.remark||'')).trim(),qty:'',price:0,amt:num(r.amount),mode:'',c:r.created_at||'',seq:r._r,note:r.note}));
   D.pay.filter(live).forEach(r=>o.push({kind:'PAYMENT',id:r.id,date:r.date,party:r.party,remark:r.remark,qty:'',price:0,amt:num(r.amount),mode:String(r.mode).toUpperCase(),c:r.created_at||'',seq:r._r,note:r.note}));
   return o;
@@ -466,13 +490,13 @@ function drawList(){
   L.sort((a,b)=>by==='created'?((b.c>a.c?1:b.c<a.c?-1:0)||(b.date>a.date?1:b.date<a.date?-1:0)||b.seq-a.seq):((b.date>a.date?1:b.date<a.date?-1:0)||(b.c>a.c?1:b.c<a.c?-1:0)||b.seq-a.seq));
   $('#lk1').textContent=L.length; $('#lk2').textContent='\u20B9 '+fmt(L.filter(r=>r.kind!=='PAYMENT').reduce((a,r)=>a+r.amt,0)); $('#lk3').textContent='\u20B9 '+fmt(L.filter(r=>r.kind==='PAYMENT').reduce((a,r)=>a+r.amt,0));
   if(lS.k) L.sort((a,b)=>lS.dir*cmpv(a,b,lS.k));
-  const sig=[by,f,t,pn,k].join('|'); if(sig!==lastSig){ lastSig=sig; listLim=1000; } const shown=L.slice(0,listLim);
-  $('#ll').innerHTML=shown.map(r=>`<tr class="${r.kind}"><td>${fd(r.date)}</td><td><b>${esc(r.party)}</b></td>
-   <td>${r.kind==='PAYMENT'?`<span class="ch p">${esc(r.mode||'Payment')}</span>`:r.kind==='EXTRA'?'<span class="ch e">Extra</span>':thumb(r.remark)}${esc(r.remark)}${r.note?`<span class="note">${esc(r.note)}</span>`:''}</td>
-   <td class="n">${esc(r.qty)}</td><td class="n">${r.price?fmt(r.price):''}</td><td class="n"><b>${fmt(r.amt)}</b></td>
-   <td>${r.c?fd(r.c)+' '+r.c.slice(11,16):'-'}</td>
-   <td class="noprint n"><button class="ic" title="Edit" onclick="editRow('${r.kind}','${r.id}')">✎</button><button class="ic del" title="Delete" onclick="del('${r.kind}','${r.id}')">×</button></td></tr>`).join('')||'<tr><td colspan="8" style="padding:20px;color:var(--mut)">No entries found. For older entries click <b>"All (incl. old)"</b> above.</td></tr>';
-  if(L.length>shown.length) $('#ll').insertAdjacentHTML('beforeend',`<tr><td colspan="8" style="text-align:center;padding:14px"><button class="btn" onclick="listLim+=1000;drawList()">Show more (${L.length-shown.length} remaining)</button></td></tr>`);
+  L=listGroup(L); const sig=[by,f,t,pn,k].join('|'); if(sig!==lastSig){ lastSig=sig; listLim=1000; } const shown=L.slice(0,listLim);
+  $('#ll').innerHTML=shown.map(r=>{ const ty=r.kind==='BILL'?'Sale <small style="color:var(--mut)">('+r.n+' item'+(r.n>1?'s':'')+')</small>':r.kind==='PAYMENT'?`<span class="ch p">${esc(r.mode==='BANK'?'Bank':'Cash')}</span>`:r.kind==='EXTRA'?'<span class="ch e">Extra</span>':'Sale';
+   const pk=r.kind==='BILL'?'MAIL':r.kind, pv=r.kind==='EXTRA'?'':`<button class="btn" style="padding:5px 10px" onclick="pvOpen('${pk}','${pk==='MAIL'?esc(r.bill||('row:'+r.id)):r.id}','${esc(r.party)}')">Preview</button>`;
+   const eb=r.kind==='BILL'?`<button class="ic" title="Open / edit bill" onclick="billEdit('${esc(r.bill)}','${esc(r.party)}')">✎</button><button class="ic del" title="Delete whole bill" onclick="delBill('${esc(r.bill)}','${esc(r.party)}')">×</button>`:`<button class="ic" title="Edit" onclick="editRow('${r.kind}','${r.id}')">✎</button><button class="ic del" title="Delete" onclick="del('${r.kind}','${r.id}')">×</button>`;
+   return `<tr class="${r.kind==='BILL'?'MAIL':r.kind}"><td>${fd(r.date)}</td><td>${r.bill?`<span class="tag" style="background:var(--priL);color:var(--pri);margin:0">${esc(r.bill)}</span>`:''}</td><td><b>${esc(r.party)}</b>${r.note?`<span class="note">${esc(r.note)}</span>`:''}</td><td>${ty}</td><td class="n"><b>${fmt(r.amt)}</b></td>
+   <td class="noprint n" style="white-space:nowrap">${eb} ${pv}</td></tr>`; }).join('')||'<tr><td colspan="6" style="padding:20px;color:var(--mut)">No entries found. For older entries click <b>"All (incl. old)"</b> above.</td></tr>';
+  if(L.length>shown.length) $('#ll').insertAdjacentHTML('beforeend',`<tr><td colspan="6" style="text-align:center;padding:14px"><button class="btn" onclick="listLim+=1000;drawList()">Show more (${L.length-shown.length} remaining)</button></td></tr>`);
   say(L.length>shown.length?'Showing '+shown.length+' of '+L.length+' entries.':'');
 }
 
@@ -679,9 +703,9 @@ async function stPrint(){ const f=await stFile(); if(!f) return; const u=URL.cre
   if(w) say('PDF opened in a new tab. Press Ctrl+P (Cmd+P on Mac) to print.'); else { const a=document.createElement('a'); a.href=u; a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); say('Pop-up was blocked, so the PDF was downloaded. Open it and print.'); } }
 
 // ---------- Bill PDF (one bill = all entries with the same Bill No for a customer)
-async function billPdf(bn,pty){
+async function billPdf(bn,pty,pv){
   const name=pty||pname($('#lp').value); if(!name){ say('Select a customer first',true); return; }
-  const p=parties.find(x=>x.party_name===name), rows=ledgerRows(D,mult,name,p.opening_balance), B=rows.filter(r=>r.kind==='MAIL'&&r.bill===bn);
+  const p=parties.find(x=>x.party_name===name), rows=ledgerRows(D,mult,name,p.opening_balance), B=String(bn).startsWith('row:')?rows.filter(r=>r.kind==='MAIL'&&r.id===bn.slice(4)):rows.filter(r=>r.kind==='MAIL'&&r.bill===bn); const bl=String(bn).startsWith('row:')?'-':bn;
   if(!B.length){ say('Bill not found',true); return; } stInit();
   try{
     const {PDFDocument,StandardFonts,rgb}=PDFLib, doc=await PDFDocument.create(), F=await doc.embedFont(StandardFonts.Helvetica), Bd=await doc.embedFont(StandardFonts.HelveticaBold);
@@ -695,13 +719,13 @@ async function billPdf(bn,pty){
     const thead=()=>{ pg.drawRectangle({x:M,y:y-6,width:R-M,height:20,color:NAVY}); const o={b:1,s:7.5,c:WHITE}; T('#',X.no,y,o); T('PRODUCT NAME',X.prod,y,o); RT('CARTOON',X.ctn,y,o); RT('CARTOON PCS',X.cpc,y,o); RT('PRICE',X.rate,y,o); RT('TOTAL',X.tot,y,o); y-=24; };
     const newPage=first=>{ pg=doc.addPage([W,H]); pages.push(pg);
       if(first){ pg.drawRectangle({x:0,y:H-78,width:W,height:78,color:NAVY}); pg.drawRectangle({x:0,y:H-82,width:W,height:4,color:ACC});
-        T(biz,M,H-38,{b:1,s:20,c:WHITE}); if(cline) T(cline,M,H-58,{s:9,c:rgb(.8,.84,.96)}); RT('BILL',R,H-34,{b:1,s:14,c:WHITE}); RT('Bill No: '+bn,R,H-54,{s:9,c:rgb(.8,.84,.96)}); y=H-112; }
+        T(biz,M,H-38,{b:1,s:20,c:WHITE}); if(cline) T(cline,M,H-58,{s:9,c:rgb(.8,.84,.96)}); RT('BILL',R,H-34,{b:1,s:14,c:WHITE}); RT('Bill No: '+bl,R,H-54,{s:9,c:rgb(.8,.84,.96)}); y=H-112; }
       else { pg.drawRectangle({x:0,y:H-34,width:W,height:34,color:NAVY}); T(biz,M,H-22,{b:1,s:11,c:WHITE}); RT('Bill '+bn+' (continued)',R,H-22,{s:9,c:WHITE}); y=H-62; } };
     newPage(true);
     const dates=[...new Set(B.map(r=>r.date))].sort(), total=B.reduce((a,r)=>a+r.total,0);
     const idx=rows.indexOf(B[0]), prevBal=B[0].pending-B[0].total;
     T('BILLED TO',M,y,{s:7.5,c:MUT,b:1}); T('BILL DETAILS',R-170,y,{s:7.5,c:MUT,b:1}); y-=17; T(name,M,y,{b:1,s:17});
-    T('Bill No: '+bn,R-170,y+1,{b:1,s:10}); y-=15; T('Date: '+fd(dates[0])+(dates.length>1?' to '+fd(dates[dates.length-1]):''),R-170,y+2,{s:9,c:MUT}); y-=28; thead();
+    T('Bill No: '+bl,R-170,y+1,{b:1,s:10}); y-=15; T('Date: '+fd(dates[0])+(dates.length>1?' to '+fd(dates[dates.length-1]):''),R-170,y+2,{s:9,c:MUT}); y-=28; thead();
     B.forEach((r,i)=>{ if(y<M+120){ newPage(false); thead(); } if(i%2===0) pg.drawRectangle({x:M,y:y-5,width:R-M,height:17,color:rgb(.975,.98,.995)});
       T(String(i+1),X.no,y,{s:8.5,c:MUT}); T(cut(r.remark,X.ctn-X.prod-62,8.5),X.prod,y,{s:8.5}); if(!/^Bill /i.test(r.remark)){ RT(String(r.cartons),X.ctn,y,{s:8.5,c:MUT}); RT(String(r.pcs),X.cpc,y,{s:8.5,c:MUT}); RT(fmt(r.price),X.rate,y,{s:8.5,c:MUT}); }
       RT(fmt(r.total),X.tot,y,{s:8.5,b:1}); pg.drawLine({start:{x:M,y:y-5},end:{x:R,y:y-5},thickness:.4,color:LN}); y-=17; });
@@ -712,13 +736,13 @@ async function billPdf(bn,pty){
     T(after<-0.005?'Advance after this bill':'Total payable',bx+12,y-38,{b:1,s:9.5}); RT('Rs. '+fmt(Math.abs(after)),R-12,y-38,{b:1,s:11.5,c:after<-0.005?GRN:RED});
     pages.forEach((q,i)=>{ q.drawLine({start:{x:M,y:44},end:{x:R,y:44},thickness:.5,color:LN}); q.drawText('Thank you for your business.'+(cline?'  '+san(cline):''),{x:M,y:30,size:7.5,font:F,color:MUT}); const t='Page '+(i+1)+' of '+pages.length; q.drawText(t,{x:R-F.widthOfTextAtSize(t,7.5),y:30,size:7.5,font:F,color:MUT}); });
     const bytes=await doc.save(), f=new File([bytes],'Bill_'+String(bn).replace(/[^\w]+/g,'_')+'_'+name.replace(/[^\w]+/g,'_')+'.pdf',{type:'application/pdf'});
-    const a=document.createElement('a'); a.href=URL.createObjectURL(f); a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); say('✓ Bill PDF downloaded');
+    if(pv) return f; const a=document.createElement('a'); a.href=URL.createObjectURL(f); a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); say('✓ Bill PDF downloaded');
   }catch(e){ say('Bill PDF failed: '+e.message,true); }
 }
 
 // ---------- Payment Receipt PDF (one payment entry)
-async function receiptPdf(id){
-  const name=pname($('#lp').value); if(!name){ say('Select a customer first',true); return; }
+async function receiptPdf(id,pty,pv){
+  const name=pty||pname($('#lp').value); if(!name){ say('Select a customer first',true); return; }
   const p=parties.find(x=>x.party_name===name), rows=ledgerRows(D,mult,name,p.opening_balance), r=rows.find(x=>x.kind==='PAYMENT'&&x.id===id);
   if(!r){ say('Payment not found',true); return; } stInit();
   try{
@@ -740,14 +764,14 @@ async function receiptPdf(id){
     rowT('Balance before this payment',sg(before)); rowT('Payment received',sg(-r.payment).replace('Adv ','- ')); rowT(after<-0.005?'Advance (in your favour)':'Balance due',sg(after),{b:1,bg:rgb(.93,.94,1),c2:after<-0.005?GRN:RED});
     pg.drawLine({start:{x:M,y:44},end:{x:R,y:44},thickness:.5,color:LN}); pg.drawText('Thank you. '+san(cline||''),{x:M,y:30,size:7.5,font:F,color:MUT});
     const bytes=await doc.save(), f=new File([bytes],'Receipt_'+name.replace(/[^\w]+/g,'_')+'_'+r.date+'.pdf',{type:'application/pdf'});
-    const a=document.createElement('a'); a.href=URL.createObjectURL(f); a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); say('✓ Receipt PDF downloaded');
+    if(pv) return f; const a=document.createElement('a'); a.href=URL.createObjectURL(f); a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); say('✓ Receipt PDF downloaded');
   }catch(e){ say('Receipt PDF failed: '+e.message,true); }
 }
 async function backup(){ say('Creating backup...'); try{ const n=await call('backup'); say('✓ Backup created: '+n+' (in Google Drive)'); }catch(e){ say(e.message,true); } }
 
 sortable('#sum',['party_name','opening_balance','main_purchase','extra_charges','cash_payment','bank_payment','final_pending'],sS,drawSummary);
-sortable('#lst',['date','party','remark','','price','amt','c'],lS,drawList);
-sortable('#led',['date','','remark','cartons','pcs','price','total','cash','bank','pending',''],lG,loadLedger);
+sortable('#lst',['date','bill','party','kind','amt'],lS,drawList);
+sortable('#led',['date','bill','remark','total','cash','bank','pending'],lG,loadLedger);
 sortable('#tp',['n','ord','ctn','pcs','val','avg','val'],aP,drawAna);
 sortable('#tq',['n','ord','ctn','val','avg','pay','val'],aQ,drawAna);
 if(DEFAULT_URL) $('#urlrow').classList.add('hide');
