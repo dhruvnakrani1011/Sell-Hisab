@@ -119,7 +119,8 @@ th.srt{cursor:pointer;user-select:none}th.srt:hover{filter:brightness(1.3)}th.sr
 <div class="grid"><div><label>Date</label><input id="f_date" type="date"></div><div><label>Customer</label><div style="display:flex;gap:8px"><input id="f_party" list="plist2" placeholder="Select customer" oninput="prev()"><button class="btn" style="white-space:nowrap" onclick="newParty()">+ New customer</button></div></div></div>
 <div id="g_mail"><div class="seg" id="mseg"><button data-m="items" class="on">Items</button><button data-m="bill">Bill amount</button></div>
 <div id="g_bill" class="hide"><div class="grid"><div><label>Bill number</label><input id="f_bn" placeholder="e.g. 1254"></div><div><label>Bill amount</label><input id="f_ba" type="number" step="any" oninput="prev()"></div></div></div>
-<div id="g_items"><div class="grid"><div><label>Bill no. (same no. = same bill)</label><input id="f_bno" placeholder="auto"></div><div><label>&nbsp;</label><label class="chk"><input type="checkbox" id="f_keep"> Next item in same bill</label></div></div><label>Product</label><input id="f_prod" list="plist" autocomplete="off" placeholder="Search or type a new product" oninput="prev()">
+<div id="g_items"><div class="grid"><div><label>Bill no. (same no. = same bill)</label><input id="f_bno" placeholder="auto" oninput="billPanel(true)"></div><div><label>&nbsp;</label><label class="chk"><input type="checkbox" id="f_keep"> Next item in same bill</label></div></div><label>Product</label><input id="f_prod" list="plist" autocomplete="off" placeholder="Search or type a new product" oninput="prev()">
+<div id="bpanel" class="hide" style="margin:10px 0 14px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--priL)"></div>
 <span id="np" class="newp hide">+ New product. It will be added to Product Master on save.</span>
 <div class="grid"><div><label>Cartons</label><input id="f_c" type="number" step="any" oninput="prev()"></div><div><label>Pcs per carton</label><input id="f_p" type="number" step="any" oninput="prev()"></div><div><label>Price</label><input id="f_pr" type="number" step="any" oninput="prev()"></div></div></div></div>
 <div id="g_pay" class="hide"><div class="grid"><div><label>Cash amount</label><input id="f_cash" type="number" step="any" oninput="prev()"></div><div><label>Bank amount</label><input id="f_bank" type="number" step="any" oninput="prev()"></div></div></div>
@@ -202,6 +203,19 @@ function calc(D,mult){
   D.pay.filter(live).forEach(r=>{const s=S[r.party]; if(!s) return; if(String(r.mode).toUpperCase()==='BANK') s.bank_payment+=num(r.amount); else s.cash_payment+=num(r.amount);});
   return Object.values(S).map(s=>({...s,final_pending:s.opening_balance+s.main_purchase+s.extra_charges-s.cash_payment-s.bank_payment})).sort((a,b)=>a.party_name.localeCompare(b.party_name));
 }
+
+// ---------- Bill panel in New Entry: type an existing bill no -> see its items, add more, edit, PDF
+function billPanel(fill){
+  const e=$('#bpanel'); if(!e) return; const bn=($('#f_bno').value||'').trim(), L=bn?D.mail.filter(r=>live(r)&&String(r.bill_no||'').toLowerCase()===bn.toLowerCase()):[];
+  if(!L.length){ e.classList.add('hide'); e.innerHTML=''; return; }
+  const party=L[0].party; if(fill&&pname($('#f_party').value)!==party){ $('#f_party').value=party; }
+  const tot=L.reduce((a,r)=>a+num(r.cartons)*num(r.pcs)*num(r.price)*mult,0);
+  e.classList.remove('hide');
+  e.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px"><b>Bill ${esc(L[0].bill_no)} &middot; ${esc(party)} &middot; ${L.length} item(s)</b><span><button class="btn" onclick="billPdf('${esc(L[0].bill_no)}','${esc(party).replace(/'/g,"\\'")}')">Bill PDF</button></span></div>
+  <div class="wrap" style="max-height:220px;overflow:auto"><table class="at" style="min-width:0"><thead><tr><th>Product</th><th class="n">Ctn</th><th class="n">Pcs</th><th class="n">Price</th><th class="n">Total</th><th></th></tr></thead><tbody>`+
+  L.map(r=>`<tr><td>${esc(r.product)}</td><td class="n">${r.cartons}</td><td class="n">${r.pcs}</td><td class="n">${fmt(num(r.price)*mult)}</td><td class="n">${fmt(num(r.cartons)*num(r.pcs)*num(r.price)*mult)}</td><td class="n" style="white-space:nowrap"><button class="ic" title="Edit" onclick="editRow('MAIL','${r.id}')">&#9998;</button><button class="ic del" title="Delete" onclick="del('MAIL','${r.id}')">&times;</button></td></tr>`).join('')+
+  `</tbody></table></div><div style="text-align:right;margin-top:8px"><b>Bill total: &#8377; ${fmt(tot)}</b> &nbsp; <small style="color:var(--mut)">Add another item below with the same Bill no.</small></div>`;
+}
 function bnoFill(){ const e=$('#f_bno'); if(e&&!e.value) e.value=nextBill(); }
 function nextBill(k){ let mx=0; D.mail.forEach(r=>{ const m=/^B(\d+)$/i.exec(String(r.bill_no||'').trim()); if(m) mx=Math.max(mx,+m[1]); }); return 'B'+String(mx+1+(k||0)).padStart(4,'0'); }
 function ledgerRows(D,mult,name,opening){
@@ -213,7 +227,7 @@ function ledgerRows(D,mult,name,opening){
   let p=opening; o.forEach(r=>{p+=r.total-r.payment; r.pending=p;}); return o;
 }
 //CALC-END
-const DEFAULT_URL="https://script.google.com/macros/s/AKfycbypF1UaCH0vwD27fkxkL6IXy_N1k4DeXDJZ74U7o2I4a1hH0mbnHepilVxrGug1ev363Q/exec"; // optional: paste your Web App URL here so it is never asked again
+const DEFAULT_URL="https://script.google.com/macros/s/AKfycbxZ5b5L6nqvQe9vFw1nXfWuWPQsQs7WNRKolSDXWBqMdmtkTi3PBytLqfl1b46-CKNH2A/exec"; // optional: paste your Web App URL here so it is never asked again
 let imgs={}; const IU=n=>imgs[String(n).trim().toUpperCase()]||'';
 const thumb=(n,edit)=>{ const u=IU(n); return u?`<img class="th" loading="lazy" src="${esc(u)}" alt="" onerror="this.style.display='none'">`:(edit?`<span class="th th0" title="Add image" data-n="${esc(n)}" onclick="setImg(this.dataset.n)">+</span>`:''); };
 let API=localStorage.getItem('gs_url')||DEFAULT_URL, KEY=localStorage.getItem('gs_key')||'';
@@ -292,7 +306,7 @@ async function upd(kind,id,patch){
   try{ const L=D[LIST[kind]], i=L.findIndex(x=>x.id===id), oldP=i>=0?L[i].party:null; const row=await call('update',{sheet:SHEET[kind],id,patch}); if(i>=0) L[i]={...L[i],...row}; refresh(); queueSync([oldP,row.party]); redraw(); return true; }
   catch(e){ say(e.message,true); return false; }
 }
-function redraw(){ drawSummary(); if(!$('#lst').classList.contains('hide')) drawList(); }
+function redraw(){ billPanel(); drawSummary(); if(!$('#lst').classList.contains('hide')) drawList(); }
 async function mark(kind,id,on){ if(await upd(kind,id,{matched_at:on?'':nowIso()})) loadLedger(); }
 async function editNote(kind,id,el){ const t=prompt('Note (leave blank to remove):',el.dataset.n||''); if(t===null) return;
   if(await upd(kind,id,{note:t.trim()})) loadLedger(); }
@@ -307,7 +321,7 @@ async function editRow(kind,id){
   ed={kind,id,matched:!!r.matched_at};
   const f=(l,i,v,t,x)=>`<label>${l}</label><input id="e_${i}" type="${t||'text'}" value="${esc(v)}" ${x||''}>`;
   let h=f('Date','date',String(r.date).slice(0,10),'date')+f('Party','party',r.party,'text','list="plist2"');
-  if(kind==='MAIL') h+=f('Product','prod',r.product,'text','list="plist"')+f('Cartons','c',r.cartons,'number','step="any"')+f('Pcs per carton','p',r.pcs,'number','step="any"')+f('Price','pr',r.price,'number','step="any"');
+  if(kind==='MAIL') h+=f('Product','prod',r.product,'text','list="plist"')+f('Cartons','c',r.cartons,'number','step="any"')+f('Pcs per carton','p',r.pcs,'number','step="any"')+f('Price','pr',r.price,'number','step="any"')+f('Bill no. (change to move to another bill)','bno',r.bill_no||'');
   else { h+=f('Amount','amt',r.amount,'number','step="any"');
     h+=kind==='PAYMENT'?`<label>Mode</label><select id="e_mode"><option ${String(r.mode).toUpperCase()==='CASH'?'selected':''}>CASH</option><option ${String(r.mode).toUpperCase()==='BANK'?'selected':''}>BANK</option></select>`:f('Charge type','ct',r.charge_type||'');
     h+=f('Remark','rem',r.remark||''); }
@@ -318,7 +332,7 @@ async function saveEdit(){
   const g=i=>$('#e_'+i).value, party=pname(g('party'));
   if(!g('date')||!party) return alert('Select a valid date and party from the list');
   const patch={date:g('date'),party};
-  if(ed.kind==='MAIL'){ if(!g('prod').trim()) return alert('Enter a product'); Object.assign(patch,{product:g('prod').trim(),cartons:+g('c')||0,pcs:+g('p')||0,price:+g('pr')||0}); }
+  if(ed.kind==='MAIL'){ if(!g('prod').trim()) return alert('Enter a product'); Object.assign(patch,{product:g('prod').trim(),cartons:+g('c')||0,pcs:+g('p')||0,price:+g('pr')||0,bill_no:g('bno').trim()}); }
   else { const a=+g('amt'); if(!a) return alert('Enter an amount'); Object.assign(patch,{amount:a,remark:g('rem').trim()});
     if(ed.kind==='PAYMENT') patch.mode=g('mode'); else patch.charge_type=g('ct').trim(); }
   if(ed.matched) patch.matched_at='';
@@ -371,7 +385,7 @@ async function saveEntry(){
     if(k==='mail'&&mm==='items'&&!prodSet.has(row.product.toUpperCase())){
       try{ const pr=await call('add',{sheet:'Products',row:{name:row.product}}); D.products.push(pr); prodSet.add(row.product.toUpperCase()); $('#plist').insertAdjacentHTML('beforeend',`<option value="${esc(row.product)}">`); extra=' \u00B7 new product added to Product Master'; }catch(e){ extra=' \u00B7 (could not add product to Product Master)'; }
     }
-    refresh(); queueSync(party); say('\u2713 Saved'+extra+(rows[0].bill_no?' \u00B7 Bill '+rows[0].bill_no:'')); const keepB=$('#f_keep').checked?rows[0].bill_no:''; ['f_prod','f_c','f_p','f_pr','f_bn','f_ba','f_amt','f_cash','f_bank','f_rem'].forEach(i=>$('#'+i).value=''); $('#f_bno').value=keepB||nextBill(); prev(); if(k==='mail') $('#f_prod').focus();
+    refresh(); queueSync(party); say('\u2713 Saved'+extra+(rows[0].bill_no?' \u00B7 Bill '+rows[0].bill_no:'')); const keepB=$('#f_keep').checked?rows[0].bill_no:''; ['f_prod','f_c','f_p','f_pr','f_bn','f_ba','f_amt','f_cash','f_bank','f_rem'].forEach(i=>$('#'+i).value=''); $('#f_bno').value=keepB||nextBill(); billPanel(); prev(); if(k==='mail') $('#f_prod').focus();
   }catch(e){ say('Save failed: '+e.message,true); }
 }
 
@@ -622,8 +636,8 @@ async function stPrint(){ const f=await stFile(); if(!f) return; const u=URL.cre
   if(w) say('PDF opened in a new tab. Press Ctrl+P (Cmd+P on Mac) to print.'); else { const a=document.createElement('a'); a.href=u; a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); say('Pop-up was blocked, so the PDF was downloaded. Open it and print.'); } }
 
 // ---------- Bill PDF (one bill = all entries with the same Bill No for a customer)
-async function billPdf(bn){
-  const name=pname($('#lp').value); if(!name){ say('Select a customer first',true); return; }
+async function billPdf(bn,pty){
+  const name=pty||pname($('#lp').value); if(!name){ say('Select a customer first',true); return; }
   const p=parties.find(x=>x.party_name===name), rows=ledgerRows(D,mult,name,p.opening_balance), B=rows.filter(r=>r.kind==='MAIL'&&r.bill===bn);
   if(!B.length){ say('Bill not found',true); return; } stInit();
   try{
