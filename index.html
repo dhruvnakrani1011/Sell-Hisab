@@ -91,7 +91,7 @@ th.srt{cursor:pointer;user-select:none}th.srt:hover{filter:brightness(1.3)}th.sr
 
 <section id="app" class="hide">
 <header><span class="logo">Customer Baki</span>
-<nav><button data-t="sum">&#9638;&nbsp; Summary</button><button data-t="led">&#9776;&nbsp; Ledger</button><button data-t="ent">&#65291;&nbsp; New Entry</button><button data-t="blk">&#9638;&nbsp; Bulk Entry</button><button data-t="lst">&#9776;&nbsp; Entry List</button><button data-t="ana">&#9650;&nbsp; Analytics</button></nav>
+<nav><button data-t="sum">&#9638;&nbsp; Summary</button><button data-t="led">&#9776;&nbsp; Ledger</button><button data-t="ent">&#65291;&nbsp; New Entry</button><button data-t="bil">&#129534;&nbsp; Bills</button><button data-t="blk">&#9638;&nbsp; Bulk Entry</button><button data-t="lst">&#9776;&nbsp; Entry List</button><button data-t="ana">&#9650;&nbsp; Analytics</button></nav>
 <span id="who">Owner</span><span id="sync" style="font-size:12px;color:#94a3b8;padding:0 8px"></span><button class="btn" onclick="$('#imd').showModal()">Product Images</button><button class="btn" onclick="backup()">Backup</button><button class="btn" onclick="rebuildAllUi()">Rebuild Sheet</button><button class="btn" onclick="logout()">Sign out</button></header>
 <main><div id="msg"></div>
 
@@ -114,6 +114,17 @@ th.srt{cursor:pointer;user-select:none}th.srt:hover{filter:brightness(1.3)}th.sr
 <div><small>Final Pending</small><b id="k2">-</b></div><div><small>Last Matched</small><b id="k3">-</b><i id="k4"></i></div></div>
 <div class="card wrap"><table><thead><tr><th>Date</th><th>Party Name</th><th>Product Name</th><th class="n">Cartons</th><th class="n">Pcs / Carton</th><th class="n">Original Price</th><th class="n">Original Total</th><th class="n">Cash Payment</th><th class="n">Bank Payment</th><th class="n">Pending</th><th class="noprint act"></th></tr></thead><tbody id="lb"></tbody></table></div></div>
 
+<div id="bil" class="tab hide">
+<div id="bl_list"><div class="card bar noprint"><div style="flex:1"><label>Search bill no. / customer</label><input id="bl_q" placeholder="e.g. B0001 or customer name" oninput="billsDraw()"></div><button class="pri" onclick="billNew()">+ New bill</button></div>
+<div class="card wrap"><table><thead><tr><th>Bill no.</th><th>Date</th><th>Customer</th><th class="n">Items</th><th class="n">Bill total</th><th></th></tr></thead><tbody id="bl_b"></tbody></table></div></div>
+<div id="bl_det" class="hide"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><button class="btn" onclick="billBack()">&larr; All bills</button></div><div><button class="btn" onclick="billPdf(bCur.no,bCur.party)">Download Bill PDF</button></div></div>
+<h3 id="bd_t" style="margin:14px 0 4px"></h3><div id="bd_s" style="color:var(--mut);font-size:13px;margin-bottom:12px"></div>
+<div class="wrap" style="max-height:340px;overflow:auto"><table class="at" style="min-width:0"><thead><tr><th>Product</th><th class="n">Cartons</th><th class="n">Pcs / Carton</th><th class="n">Price</th><th class="n">Total</th><th></th></tr></thead><tbody id="bd_b"></tbody></table></div>
+<div style="text-align:right;margin-top:10px;font-size:16px"><b id="bd_tot"></b></div></div>
+<div class="card"><b>Add item to this bill</b><div class="grid" style="margin-top:8px"><div><label>Date</label><input id="ba_d" type="date"></div><div><label>Product</label><input id="ba_p" list="plist" autocomplete="off" placeholder="Search or type product"></div></div>
+<div class="grid"><div><label>Cartons</label><input id="ba_c" type="number" step="any"></div><div><label>Pcs per carton</label><input id="ba_pc" type="number" step="any"></div><div><label>Price</label><input id="ba_pr" type="number" step="any"></div></div>
+<p style="margin-bottom:0"><button class="pri" onclick="billAdd()">Add item</button></p></div></div>
+</div>
 <div id="ent" class="tab hide"><div class="ent-grid noprint">
 <div class="card"><div class="seg" id="seg"><button data-k="mail" class="on">Sale Entry</button><button data-k="pay">Payment</button><button data-k="ext">Extra Charge</button></div><input type="hidden" id="kind" value="mail">
 <div class="grid"><div><label>Date</label><input id="f_date" type="date"></div><div><label>Customer</label><div style="display:flex;gap:8px"><input id="f_party" list="plist2" placeholder="Select customer" oninput="prev()"><button class="btn" style="white-space:nowrap" onclick="newParty()">+ New customer</button></div></div></div>
@@ -216,6 +227,38 @@ function billPanel(fill){
   L.map(r=>`<tr><td>${esc(r.product)}</td><td class="n">${r.cartons}</td><td class="n">${r.pcs}</td><td class="n">${fmt(num(r.price)*mult)}</td><td class="n">${fmt(num(r.cartons)*num(r.pcs)*num(r.price)*mult)}</td><td class="n" style="white-space:nowrap"><button class="ic" title="Edit" onclick="editRow('MAIL','${r.id}')">&#9998;</button><button class="ic del" title="Delete" onclick="del('MAIL','${r.id}')">&times;</button></td></tr>`).join('')+
   `</tbody></table></div><div style="text-align:right;margin-top:8px"><b>Bill total: &#8377; ${fmt(tot)}</b> &nbsp; <small style="color:var(--mut)">Add another item below with the same Bill no.</small></div>`;
 }
+
+// ---------- Bills tab
+var bCur=null;
+function billsAll(){ const m=new Map(); D.mail.filter(r=>live(r)&&r.bill_no).forEach(r=>{ const k=r.party+'\u0001'+r.bill_no, g=m.get(k)||{no:String(r.bill_no),party:r.party,date:r.date,n:0,tot:0}; g.n++; g.tot+=num(r.cartons)*num(r.pcs)*num(r.price)*mult; if(r.date>g.date) g.date=r.date; m.set(k,g); }); return [...m.values()]; }
+function billsDraw(){
+  if(!$('#bil')||$('#bil').classList.contains('hide')&&!bCur) return;
+  const q=($('#bl_q').value||'').trim().toLowerCase(); let L=billsAll().filter(b=>!q||b.no.toLowerCase().includes(q)||b.party.toLowerCase().includes(q));
+  L.sort((a,b)=>(a.date<b.date?1:a.date>b.date?-1:0)||(a.no<b.no?1:-1)); const more=L.length>300; L=L.slice(0,300);
+  $('#bl_b').innerHTML=L.map(b=>`<tr><td><b>${esc(b.no)}</b></td><td>${fd(b.date)}</td><td>${esc(b.party)}</td><td class="n">${b.n}</td><td class="n">${fmt(b.tot)}</td><td class="n" style="white-space:nowrap"><button class="btn" data-no="${esc(b.no)}" data-pt="${esc(b.party)}" onclick="billOpen(this.dataset.no,this.dataset.pt)">Open</button> <button class="btn" data-no="${esc(b.no)}" data-pt="${esc(b.party)}" onclick="billPdf(this.dataset.no,this.dataset.pt)">PDF</button></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--mut);padding:24px">No bills yet. Click "+ New bill" or save a sale entry.</td></tr>'+'';
+  if(more) say('Showing latest 300 bills. Use search to find older ones.');
+  if(bCur) billDetail();
+}
+function billOpen(no,party){ bCur={no,party,date:null}; $('#bl_list').classList.add('hide'); $('#bl_det').classList.remove('hide'); billDetail(); window.scrollTo(0,0); }
+function billBack(){ bCur=null; $('#bl_det').classList.add('hide'); $('#bl_list').classList.remove('hide'); billsDraw(); }
+function billNew(){ const nm=prompt('Customer name (as in Party Master):'); if(nm===null) return; const p=pname(nm); if(!p){ say('Customer not found in Party Master. Add the customer first (New Entry > + New customer).',true); return; }
+  bCur={no:nextBill(),party:p,date:null,fresh:true}; $('#bl_list').classList.add('hide'); $('#bl_det').classList.remove('hide'); billDetail(); }
+function billDetail(){
+  const L=D.mail.filter(r=>live(r)&&r.party===bCur.party&&String(r.bill_no||'')===bCur.no).sort((a,b)=>(a.date<b.date?-1:a.date>b.date?1:0)||(a._r-b._r));
+  const tot=L.reduce((a,r)=>a+num(r.cartons)*num(r.pcs)*num(r.price)*mult,0);
+  $('#bd_t').textContent='Bill '+bCur.no+' · '+bCur.party; $('#bd_s').textContent=L.length?(L.length+' item(s) · Date '+fd(L[0].date)):'New bill. Add the first item below.';
+  $('#bd_b').innerHTML=L.map(r=>`<tr><td>${esc(r.product)}</td><td class="n">${r.cartons}</td><td class="n">${r.pcs}</td><td class="n">${fmt(num(r.price)*mult)}</td><td class="n">${fmt(num(r.cartons)*num(r.pcs)*num(r.price)*mult)}</td><td class="n" style="white-space:nowrap"><button class="ic" title="Edit item" onclick="editRow('MAIL','${r.id}')">&#9998;</button><button class="ic del" title="Delete item" onclick="del('MAIL','${r.id}')">&times;</button></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--mut);padding:18px">No items yet</td></tr>';
+  $('#bd_tot').textContent='Bill total: ₹ '+fmt(tot); if(!$('#ba_d').value) $('#ba_d').value=(L[0]&&String(L[0].date).slice(0,10))||new Date().toISOString().slice(0,10);
+}
+async function billAdd(){
+  const date=$('#ba_d').value, pn=$('#ba_p').value.trim(); if(!date||!pn) return say('Enter date and product',true);
+  const row={date,party:bCur.party,product:pn,cartons:+$('#ba_c').value||0,pcs:+$('#ba_pc').value||0,price:+$('#ba_pr').value||0,bill_no:bCur.no};
+  say('Saving...');
+  try{ const saved=await call('addMany',{sheet:'Mail',rows:[row]}); D.mail.push(...saved);
+    if(!prodSet.has(pn.toUpperCase())){ try{ const pr=await call('add',{sheet:'Products',row:{name:pn}}); D.products.push(pr); prodSet.add(pn.toUpperCase()); $('#plist').insertAdjacentHTML('beforeend',`<option value="${esc(pn)}">`); }catch(e){} }
+    refresh(); queueSync(bCur.party); ['ba_p','ba_c','ba_pc','ba_pr'].forEach(i=>$('#'+i).value=''); billDetail(); say('✓ Item added to bill '+bCur.no); $('#ba_p').focus();
+  }catch(e){ say('Save failed: '+e.message,true); }
+}
 function bnoFill(){ const e=$('#f_bno'); if(e&&!e.value) e.value=nextBill(); }
 function nextBill(k){ let mx=0; D.mail.forEach(r=>{ const m=/^B(\d+)$/i.exec(String(r.bill_no||'').trim()); if(m) mx=Math.max(mx,+m[1]); }); return 'B'+String(mx+1+(k||0)).padStart(4,'0'); }
 function ledgerRows(D,mult,name,opening){
@@ -251,7 +294,7 @@ async function signIn(){
 function logout(){ localStorage.removeItem('gs_key'); localStorage.removeItem('gs_url'); location.reload(); }
 function tab(t){ document.querySelectorAll('.tab').forEach(e=>e.classList.add('hide')); $('#'+t).classList.remove('hide');
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t)); say(''); }
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{ const t=b.dataset.t; tab(t);
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{ const t=b.dataset.t; tab(t); if(t==='bil'){ bCur=null; $('#bl_det').classList.add('hide'); $('#bl_list').classList.remove('hide'); billsDraw(); }
   if(t==='sum') drawSummary(); if(t==='lst'){ if(!$('#lf_from').value) listRange(0); else drawList(); } if(t==='blk'&&!$('#bb').children.length) bInit(); if(t==='ana') anaRange(anaR); });
 
 async function start(){
@@ -306,7 +349,7 @@ async function upd(kind,id,patch){
   try{ const L=D[LIST[kind]], i=L.findIndex(x=>x.id===id), oldP=i>=0?L[i].party:null; const row=await call('update',{sheet:SHEET[kind],id,patch}); if(i>=0) L[i]={...L[i],...row}; refresh(); queueSync([oldP,row.party]); redraw(); return true; }
   catch(e){ say(e.message,true); return false; }
 }
-function redraw(){ billPanel(); drawSummary(); if(!$('#lst').classList.contains('hide')) drawList(); }
+function redraw(){ billPanel(); billsDraw(); drawSummary(); if(!$('#lst').classList.contains('hide')) drawList(); }
 async function mark(kind,id,on){ if(await upd(kind,id,{matched_at:on?'':nowIso()})) loadLedger(); }
 async function editNote(kind,id,el){ const t=prompt('Note (leave blank to remove):',el.dataset.n||''); if(t===null) return;
   if(await upd(kind,id,{note:t.trim()})) loadLedger(); }
