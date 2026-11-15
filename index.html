@@ -424,14 +424,14 @@ const BC={mail:[['party','Customer','plist2'],['prod','Product','plist'],['c','C
 const NUMC=['c','p','pr','amt','cash','bank']; let bk='mail';
 function bInit(){ $('#b_date').valueAsDate=new Date(); bKind('mail'); }
 function bKind(k){ bk=k; document.querySelectorAll('#bseg button').forEach(x=>x.classList.toggle('on',x.dataset.k===k));
-  $('#bh').innerHTML='<tr><th>#</th>'+BC[k].map(c=>`<th>${c[1]}</th>`).join('')+(k==='mail'?'<th class="n">Total</th>':'')+'<th></th></tr>'; $('#bb').innerHTML=''; bAdd(10); }
+  $('#bh').innerHTML='<tr><th>#</th>'+BC[k].map(c=>`<th>${c[1]}</th>`).join('')+(k==='mail'?'<th class="n">Total</th><th>Bill no.</th>':'')+'<th></th></tr>'; $('#bb').innerHTML=''; bAdd(10); }
 function bAdd(n){
   for(let i=0;i<n;i++){
     const last=$('#bb').lastElementChild, lp=last?last.querySelector('[data-c=party]').value:'';
     const tr=document.createElement('tr');
     tr.innerHTML='<td class="n" style="color:var(--mut)"></td>'+BC[bk].map(c=>c[0]==='mode'?'<td><select class="b-in" data-c="mode"><option>CASH</option><option>BANK</option></select></td>':
       `<td><input class="b-in" data-c="${c[0]}" ${c[2]?`list="${c[2]}"`:''} ${NUMC.includes(c[0])?'type="number" step="any" inputmode="decimal"':''} oninput="bCalc()" ${c[0]==='party'?`value="${esc(lp)}"`:''}></td>`).join('')+
-      (bk==='mail'?'<td class="tot"></td>':'')+'<td><button class="ic del" onclick="this.closest(\'tr\').remove();bCalc()">×</button></td>';
+      (bk==='mail'?'<td class="tot"></td><td class="bno" style="font-weight:600;color:var(--pri);white-space:nowrap"></td>':'')+'<td><button class="ic del" onclick="this.closest(\'tr\').remove();bCalc()">×</button></td>';
     $('#bb').appendChild(tr);
   }
   bCalc();
@@ -439,9 +439,9 @@ function bAdd(n){
 function bRows(){ return [...$('#bb').children].map(tr=>{ const o={}; tr.querySelectorAll('.b-in').forEach(i=>o[i.dataset.c]=i.value.trim()); return {tr,o}; }); }
 const bFilled=o=>Object.entries(o).some(([k,v])=>v&&k!=='party'&&k!=='mode');
 function bCalc(){
-  let n=0,s=0,np=new Set();
+  let n=0,s=0,np=new Set(); const bmap=new Map(); let bj=0;
   bRows().forEach(({tr,o},i)=>{ tr.firstElementChild.textContent=i+1; const f=bFilled(o); if(f) n++; const pi=tr.querySelector('[data-c=party]'), isNew=!!(o.party&&!pname(o.party)); pi.classList.toggle('newin',isNew); pi.title=isNew?'New party - will be added to Party Master':''; if(isNew) np.add(o.party.toLowerCase());
-    if(bk==='bill'){ if(f) s+=+o.amt||0; } else if(bk==='mail'){ const t=(+o.c||0)*(+o.p||0)*(+o.pr||0)*mult; tr.querySelector('.tot').textContent=t?fmt(t):''; if(f) s+=t; } else if(f) s+=(+o.cash||0)+(+o.bank||0); });
+    if(bk==='bill'){ if(f) s+=+o.amt||0; } else if(bk==='mail'){ const t=(+o.c||0)*(+o.p||0)*(+o.pr||0)*mult; tr.querySelector('.tot').textContent=t?fmt(t):''; if(f){ s+=t; const pk=(pname(o.party)||o.party).toLowerCase(); if(!bmap.has(pk)) bmap.set(pk,nextBill(bj++)); tr.querySelector('.bno').textContent=bmap.get(pk); } else tr.querySelector('.bno').textContent=''; } else if(f) s+=(+o.cash||0)+(+o.bank||0); });
   $('#bsum').textContent=n+' entries'+(np.size?' · '+np.size+' new part'+(np.size>1?'ies':'y')+' (amber)':'')+' · '+(bk==='pay'?'Payments':'Total')+' \u20B9 '+fmt(s);
 }
 function bPaste(txt,t){
@@ -695,4 +695,4 @@ sortable('#tp',['n','ord','ctn','pcs','val','avg','val'],aP,drawAna);
 sortable('#tq',['n','ord','ctn','val','avg','pay','val'],aQ,drawAna);
 if(DEFAULT_URL) $('#urlrow').classList.add('hide');
 if(API&&KEY){ $('#au').value=API; $('#pw').value=KEY; $('#login').classList.remove('hide'); signIn(); } else { $('#login').classList.remove('hide'); if(API) $('#au').value=API; }
-</script></body></html> 
+</script></body></html>
