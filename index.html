@@ -336,7 +336,7 @@ function ledgerRows(D,mult,name,opening){
   let p=opening; o.forEach(r=>{p+=r.total-r.payment; r.pending=p;}); return o;
 }
 //CALC-END
-const DEFAULT_URL="https://script.google.com/macros/s/AKfycbwnJj1r0aLU1XXuOGcwJDs-Ct7qtQvAHoqMV5j87wf2x-AK07FC4pptl58K1Iaz60WKkA/exec"; // optional: paste your Web App URL here so it is never asked again
+const DEFAULT_URL="https://script.google.com/macros/s/AKfycbxB6iJeu8HkjEEqqZP4cGOc5LUzOOYyjhCZDS3qyBq13nM6aVpK5Ugz_kVLy3xkUMtBNQ/exec"; // optional: paste your Web App URL here so it is never asked again
 let imgs={}; const IU=n=>imgs[String(n).trim().toUpperCase()]||'';
 const thumb=(n,edit)=>{ const u=IU(n); return u?`<img class="th" loading="lazy" src="${esc(u)}" alt="" onerror="this.style.display='none'">`:(edit?`<span class="th th0" title="Add image" data-n="${esc(n)}" onclick="setImg(this.dataset.n)">+</span>`:''); };
 let API=localStorage.getItem('gs_url')||DEFAULT_URL, KEY=localStorage.getItem('gs_key')||'';
